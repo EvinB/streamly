@@ -1,10 +1,20 @@
-import React from 'react';
+import React, { useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 
 const Dashboard = () => {
+  const navigate = useNavigate();
+
+  useEffect(() => {
+    const user = JSON.parse(localStorage.getItem('user'));
+    if (!user) {
+      navigate('/'); // Redirect to root page if user is not logged in
+    }
+  }, [navigate]);
+
   const handleLogout = () => {
     // Clear user data and redirect to login page
     localStorage.removeItem('user'); // Remove stored user data
-    window.location.href = '/'; // Redirect to login page
+    navigate('/'); // Redirect to root page
   };
 
   const style = {
