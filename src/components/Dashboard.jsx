@@ -43,14 +43,55 @@ const Dashboard = () => {
       fontSize: '24px',
       color: '#555',
     },
+    movieRecBox: {
+        display: 'flex',
+        alignItems: 'center',
+        width: '80%', // Make it responsive
+        height: '200px', // Fixed height
+        border: '2px solid #444', // Add a visible border
+        borderRadius: '10px',
+        overflowX: 'auto', // Enable horizontal scrolling
+        //backgroundColor: '#222', // Placeholder background color
+        marginTop: '20px',
+      },
   };
+
+  const body = {
+    display: 'flex',
+    flexDirection: 'row', // Keep buttons side by side
+    justifyContent: 'center', // Center buttons horizontally
+    alignItems: 'flex-start', // Align to the top
+    width: '100%', // Full container width
+    padding: '20px 0', // Add space from the top
+    gap: '20px', // Spacing between buttons
+  };
+  
 
   return (
     <div style={style.container}>
       <button style={style.logoutButton} onClick={handleLogout}>
         Logout
       </button>
-      <div style={style.placeholder}>Welcome to the Main Page!</div>
+  
+      <div style={body}>
+        <button style={{ margin: '10px', padding: '10px 50px' }}>Add Liked Movies</button>
+        <button style={{ margin: '10px', padding: '10px 50px' }}>Add Your Subscriptions</button>
+      </div>
+
+      <div style={style.movieRecBox}>
+        {/* Placeholder content */}
+        <p style={{ textAlign: 'center', width: '100%' }}>
+          Movie Recommendations Box
+        </p>
+      </div>
+
+      <div style={style.movieRecBox}>
+        {/* Placeholder content */}
+        <p style={{textAlign: 'center', width: '100%' }}>
+          Movie search filter options stuff here 
+        </p>
+      </div>
+
     </div>
   );
 };
