@@ -154,14 +154,14 @@ const Dashboard = () => {
           style={{ margin: '10px', padding: '10px 50px' }}
           onClick={() => setShowModal(true)}
         >
-          Add Your Subscriptions
+          Update Subscriptions
         </button>
       </div>
 
       {/* Display current streaming services */}
       <div style={style.serviceList}>
         <p>
-            Current Streaming Services:{" "}
+            Your Subscriptions:{" "}
             {userServices.length > 0
             ? userServices.join(", ") // Join the services with commas
             : "No streaming services selected yet."}
