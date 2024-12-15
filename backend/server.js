@@ -1,3 +1,6 @@
+require('dotenv').config();
+
+
 const express = require('express');
 const bodyParser = require('body-parser');
 const bcrypt = require('bcrypt');
@@ -9,11 +12,11 @@ const port = 3001;
 
 // Database connection configuration
 const pool = new Pool({
-  user: 'your_pg_user',       // Replace with your PostgreSQL username
-  host: 'localhost',          // Database host
-  database: 'mdb_student30',  // Your database name
-  password: 'your_pg_password', // Replace with your PostgreSQL password
-  port: 5432,                 // PostgreSQL port
+  user: process.env.PG_USER,        // PostgreSQL username
+  host: process.env.PG_HOST,        // Database host
+  database: process.env.PG_DATABASE, // Database name
+  password: process.env.PG_PASSWORD, // PostgreSQL password
+  port: process.env.PG_PORT,        // PostgreSQL port
 });
 
 // Middleware

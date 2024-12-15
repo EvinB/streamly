@@ -83,7 +83,7 @@ const Register = () => {
           required
         />
        <button style={{ margin: '10px', padding: '10px 20px' }}>
-         Login
+         Register
        </button>
       </form>
       {message && <p style={{ fontSize: '18px', marginTop: '10px' }}>{message}</p>}
