@@ -21,8 +21,13 @@ const Register = () => {
       });
       setMessage(response.data.message);
     } catch (error) {
-      setMessage('Error registering');
+      if (error.response && error.response.data.message) {
+        setMessage(error.response.data.message); // Show server error message
+      } else {
+        setMessage('Error registering. Please try again.');
+      }
     }
+    
   };
 
   const style = {
