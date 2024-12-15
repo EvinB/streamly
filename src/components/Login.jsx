@@ -13,11 +13,16 @@ const Login = () => {
         user_name: userName,
         password,
       });
-      setMessage(response.data.message);
+      setMessage(response.data.message); // Display server message
     } catch (error) {
-      setMessage('Error logging in');
+      if (error.response && error.response.data.message) {
+        setMessage(error.response.data.message); // Display specific error message
+      } else {
+        setMessage('Error logging in. Please try again.');
+      }
     }
   };
+  
 
   const style = {
     display: 'flex',
