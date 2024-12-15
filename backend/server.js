@@ -1,23 +1,26 @@
 const express = require('express');
 const bodyParser = require('body-parser');
 const bcrypt = require('bcrypt');
+const cors = require('cors'); // Import CORS middleware
 const { Pool } = require('pg');
 
 const app = express();
 const port = 3001;
 
-// Connect to PostgreSQL
+// Database connection configuration
 const pool = new Pool({
-  user: 'your_pg_user',
-  host: 'localhost',
-  database: 'mdb_student30',
-  password: 'your_pg_password',
-  port: 5432,
+  user: 'your_pg_user',       // Replace with your PostgreSQL username
+  host: 'localhost',          // Database host
+  database: 'mdb_student30',  // Your database name
+  password: 'your_pg_password', // Replace with your PostgreSQL password
+  port: 5432,                 // PostgreSQL port
 });
 
-app.use(bodyParser.json());
+// Middleware
+app.use(cors());               // Enable CORS
+app.use(bodyParser.json());    // Parse JSON request bodies
 
-// Endpoint for user registration
+// Endpoint: User Registration
 app.post('/register', async (req, res) => {
   const { user_name, password } = req.body;
 
@@ -29,20 +32,26 @@ app.post('/register', async (req, res) => {
     // Hash the password
     const hashedPassword = await bcrypt.hash(password, 10);
 
-    // Insert the user into the database
+    // Insert user into the database
     const result = await pool.query(
       'INSERT INTO streamly.user_accounts (user_name, password_hash) VALUES ($1, $2) RETURNING *',
       [user_name, hashedPassword]
     );
 
-    res.status(201).json({ message: 'User created', user: result.rows[0] });
+    res.status(201).json({ message: 'User registered successfully', user: result.rows[0] });
   } catch (error) {
     console.error('Error registering user:', error);
+
+    // Check for unique username violation
+    if (error.code === '23505') {
+      return res.status(400).json({ message: 'Username already exists' });
+    }
+
     res.status(500).json({ message: 'Internal server error' });
   }
 });
 
-// Endpoint for user login
+// Endpoint: User Login
 app.post('/login', async (req, res) => {
   const { user_name, password } = req.body;
 
@@ -69,7 +78,10 @@ app.post('/login', async (req, res) => {
       return res.status(400).json({ message: 'Invalid username or password' });
     }
 
-    res.status(200).json({ message: 'Login successful', user: { user_id: user.user_id, user_name: user.user_name } });
+    res.status(200).json({
+      message: 'Login successful',
+      user: { user_id: user.user_id, user_name: user.user_name },
+    });
   } catch (error) {
     console.error('Error logging in:', error);
     res.status(500).json({ message: 'Internal server error' });

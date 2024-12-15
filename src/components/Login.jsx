@@ -19,15 +19,54 @@ const Login = () => {
     }
   };
 
+  const style = {
+    display: 'flex',
+    flexDirection: 'column',
+    justifyContent: 'center',
+    alignItems: 'center',
+    height: '100vh',
+    width: '100vw',
+    textAlign: 'center',
+    margin: 0,
+    padding: 0,
+  };
+
+  const formStyle = {
+    display: 'flex',
+    flexDirection: 'column',
+    gap: '20px', // Increased gap for spacing
+    width: '300px', // Increase form width
+  };
+
+  const inputStyle = {
+    padding: '15px', // Increase padding to make inputs larger
+    fontSize: '18px', // Larger text
+    border: '1px solid #444',
+    borderRadius: '5px',
+    textAlign: 'center',
+    outline: 'none',
+  };
+
+  const buttonStyle = {
+    padding: '15px 20px', // Larger padding for the button
+    fontSize: '18px', // Larger button text
+    backgroundColor: '#000',
+    color: '#fff',
+    border: '1px solid #444',
+    borderRadius: '5px',
+    cursor: 'pointer',
+  };
+
   return (
-    <div>
-      <h2>Login</h2>
-      <form onSubmit={handleLogin}>
+    <div style={style}>
+      <h2 style={{ fontSize: '32px' }}>Login</h2> {/* Larger heading */}
+      <form onSubmit={handleLogin} style={formStyle}>
         <input
           type="text"
           placeholder="Username"
           value={userName}
           onChange={(e) => setUserName(e.target.value)}
+          style={inputStyle}
           required
         />
         <input
@@ -35,11 +74,14 @@ const Login = () => {
           placeholder="Password"
           value={password}
           onChange={(e) => setPassword(e.target.value)}
+          style={inputStyle}
           required
         />
-        <button type="submit">Login</button>
+       <button style={{ margin: '10px', padding: '10px 20px' }}>
+         Login
+       </button>
       </form>
-      {message && <p>{message}</p>}
+      {message && <p style={{ fontSize: '18px', marginTop: '10px' }}>{message}</p>}
     </div>
   );
 };
