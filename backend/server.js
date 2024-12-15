@@ -91,6 +91,58 @@ app.post('/login', async (req, res) => {
   }
 });
 
+//Update the users streaming platforms 
+app.post('/update-streaming-services', async (req, res) => {
+  const { user_id, streaming_services } = req.body;
+  console.log(`User ID: ${user_id}, Streaming Services: ${streaming_services}`);
+
+  if (!user_id || !streaming_services || !streaming_services.length) {
+    return res.status(400).json({ message: 'Invalid input' });
+  }
+
+  try {
+    // Clear existing services for the user
+    await pool.query('DELETE FROM streamly.users_streaming_services WHERE user_id = $1', [user_id]);
+
+    // Insert new streaming services
+    const insertQueries = streaming_services.map((service) =>
+      pool.query(
+        'INSERT INTO streamly.users_streaming_services (user_id, streaming_service_name) VALUES ($1, $2)',
+        [user_id, service]
+      )
+    );
+    await Promise.all(insertQueries);
+
+    res.status(200).json({ message: 'Streaming services updated successfully' });
+  } catch (error) {
+    console.error('Error updating streaming services:', error);
+    res.status(500).json({ message: 'Internal server error' });
+  }
+});
+
+//get the users streaming platforms 
+app.get('/get-streaming-services', async (req, res) => {
+  const { user_id } = req.query; // Extract user_id from query params
+
+  if (!user_id) {
+    return res.status(400).json({ message: 'User ID is required' });
+  }
+
+  try {
+    // Query the database to get streaming services for the user
+    const result = await pool.query(
+      'SELECT streaming_service_name FROM streamly.users_streaming_services WHERE user_id = $1',
+      [user_id]
+    );
+
+    // Send the list of streaming services back
+    res.json(result.rows.map((row) => row.streaming_service_name));
+  } catch (error) {
+    console.error('Error fetching streaming services:', error);
+    res.status(500).json({ message: 'Internal Server Error' });
+  }
+});
+
 // Start the server
 app.listen(port, () => {
   console.log(`Server running on http://localhost:${port}`);
