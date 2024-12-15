@@ -12,7 +12,7 @@ const port = 3001;
 
 // Database connection configuration
 const pool = new Pool({
-  user: '"mdb_student30"',        // PostgreSQL username
+  user: process.env.PG_USER,        // PostgreSQL username
   host: process.env.PG_HOST,        // Database host
   database: process.env.PG_DATABASE, // Database name
   password: process.env.PG_PASSWORD, // PostgreSQL password
