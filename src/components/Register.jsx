@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import axios from 'axios';
+import { useNavigate } from 'react-router-dom'; // Import useNavigate
 
 const Register = () => {
   const [userName, setUserName] = useState('');
@@ -7,8 +8,11 @@ const Register = () => {
   const [confirmPassword, setConfirmPassword] = useState('');
   const [message, setMessage] = useState('');
 
+  const navigate = useNavigate(); // Initialize navigate
+
   const handleRegister = async (e) => {
     e.preventDefault();
+
     if (password !== confirmPassword) {
       setMessage('Passwords do not match');
       return;
@@ -19,9 +23,16 @@ const Register = () => {
         user_name: userName,
         password,
       });
-      setMessage(response.data.message);
+      setMessage('Registration successful! Redirecting to login...');
+      setTimeout(() => {
+        navigate('/login'); // Redirect to the login page
+      }, 1000); // Redirect after 1 second
     } catch (error) {
-      setMessage('Error registering');
+      if (error.response && error.response.data.message) {
+        setMessage(error.response.data.message);
+      } else {
+        setMessage('Error registering. Please try again.');
+      }
     }
   };
 
@@ -52,6 +63,7 @@ const Register = () => {
     textAlign: 'center',
     outline: 'none',
   };
+
 
 
   return (

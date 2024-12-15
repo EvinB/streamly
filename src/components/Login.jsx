@@ -13,10 +13,14 @@ const Login = () => {
         user_name: userName,
         password,
       });
-      setMessage(response.data.message); // Display server message
+      localStorage.setItem('user', JSON.stringify(response.data.user)); // Save user to localStorage
+      setMessage('Login successful! Redirecting...');
+      setTimeout(() => {
+        window.location.href = '/dashboard'; // Redirect to dashboard
+      }, 1000);
     } catch (error) {
       if (error.response && error.response.data.message) {
-        setMessage(error.response.data.message); // Display specific error message
+        setMessage(error.response.data.message);
       } else {
         setMessage('Error logging in. Please try again.');
       }
