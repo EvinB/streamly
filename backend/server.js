@@ -91,6 +91,35 @@ app.post('/login', async (req, res) => {
   }
 });
 
+app.post('/update-streaming-services', async (req, res) => {
+  const { user_id, streaming_services } = req.body;
+  console.log(`User ID: ${user_id}, Streaming Services: ${streaming_services}`);
+
+  if (!user_id || !streaming_services || !streaming_services.length) {
+    return res.status(400).json({ message: 'Invalid input' });
+  }
+
+  try {
+    // Clear existing services for the user
+    await pool.query('DELETE FROM streamly.users_streaming_services WHERE user_id = $1', [user_id]);
+
+    // Insert new streaming services
+    const insertQueries = streaming_services.map((service) =>
+      pool.query(
+        'INSERT INTO streamly.users_streaming_services (user_id, streaming_service_name) VALUES ($1, $2)',
+        [user_id, service]
+      )
+    );
+    await Promise.all(insertQueries);
+
+    res.status(200).json({ message: 'Streaming services updated successfully' });
+  } catch (error) {
+    console.error('Error updating streaming services:', error);
+    res.status(500).json({ message: 'Internal server error' });
+  }
+});
+
+
 // Start the server
 app.listen(port, () => {
   console.log(`Server running on http://localhost:${port}`);
