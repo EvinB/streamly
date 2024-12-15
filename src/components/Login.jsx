@@ -56,15 +56,7 @@ const Login = () => {
     outline: 'none',
   };
 
-  const buttonStyle = {
-    padding: '15px 20px', // Larger padding for the button
-    fontSize: '18px', // Larger button text
-    backgroundColor: '#000',
-    color: '#fff',
-    border: '1px solid #444',
-    borderRadius: '5px',
-    cursor: 'pointer',
-  };
+
 
   return (
     <div style={style}>
