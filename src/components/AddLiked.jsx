@@ -61,7 +61,7 @@ const AddLiked = ({ userId, onClose }) => {
       setSearchResults(response.data);
       setMessage('');
     } catch (error) {
-      console.error('Error searching movies:', error);
+      console.error('Error searching movies and shows:', error);
       setMessage('Failed to fetch search results.');
     }
   };
@@ -74,28 +74,35 @@ const AddLiked = ({ userId, onClose }) => {
   // Submit the selected movie to the backend
   const handleAddMovie = async () => {
     if (!selectedMovie) {
-      setMessage('Please select a movie to add.');
+      setMessage('Please select a movie or show to add.');
       return;
     }
-
+  
     try {
-      await axios.post('http://localhost:3001/add-liked-movie-show', {
+      // Send a POST request to the backend
+      const response = await axios.post('http://localhost:3001/add-liked-movie-show', {
         user_id: userId,
         movie_id: selectedMovie.movie_id,
       });
-      setMessage(`"${selectedMovie.title}" added successfully!`);
-      setSelectedMovie(null);
-      setSearchResults([]);
-      setSearchQuery('');
+  
+      // Set the response message
+      setMessage(response.data.message);
+  
+      // If the movie was added successfully, clear the selection and search
+      if (response.data.message.includes('added successfully')) {
+        setSelectedMovie(null);
+        setSearchResults([]);
+        setSearchQuery('');
+      }
     } catch (error) {
-      console.error('Error adding movie:', error);
-      setMessage('Failed to add the movie.');
+      console.error('Error adding movie or show:', error);
+      setMessage('Failed to add the movie or show.');
     }
-  };
+  };  
 
   return (
     <div style={style.modal}>
-      <h3>Add Liked Movies</h3>
+      <h3>Add Liked Movies and Shows</h3>
       <input
         type="text"
         placeholder="Search for movies or shows..."

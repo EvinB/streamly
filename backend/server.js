@@ -163,7 +163,7 @@ app.get('/search-movies-shows', async (req, res) => {
 
     res.status(200).json(result.rows);
   } catch (error) {
-    console.error('Error searching movies:', error);
+    console.error('Error searching movies and shows:', error);
     res.status(500).json({ message: 'Internal server error' });
   }
 });
@@ -177,17 +177,27 @@ app.post('/add-liked-movie-show', async (req, res) => {
   }
 
   try {
-    // Insert into users_liked_movies table, handle duplicates with ON CONFLICT
-    await pool.query(
-      `INSERT INTO streamly.users_liked_movies (user_id, movie_id)
-       VALUES ($1, $2)
-       ON CONFLICT DO NOTHING`,
+    // Check if the record already exists
+    const checkResult = await pool.query(
+      `SELECT * FROM streamly.users_liked_movies WHERE user_id = $1 AND movie_id = $2`,
       [user_id, movie_id]
     );
 
-    res.status(200).json({ message: 'Movie added to liked movies successfully' });
+    if (checkResult.rows.length > 0) {
+      // If the record exists, inform the user
+      return res.status(200).json({ message: 'This movie or show is already in your liked list.' });
+    }
+
+    // Insert the record if it doesn't exist
+    await pool.query(
+      `INSERT INTO streamly.users_liked_movies (user_id, movie_id)
+       VALUES ($1, $2)`,
+      [user_id, movie_id]
+    );
+
+    res.status(200).json({ message: 'Movie or show added to liked movies/shows successfully.' });
   } catch (error) {
-    console.error('Error adding liked movie:', error);
+    console.error('Error adding liked movie or show:', error);
     res.status(500).json({ message: 'Internal server error' });
   }
 });

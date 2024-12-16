@@ -155,9 +155,9 @@ const Dashboard = () => {
           style={{ margin: '10px', padding: '10px 50px' }}
           onClick={() => setShowAddLikedModal(true)}
         >
-          Add Liked Movies
+          Add Liked Movies and Shows
         </button>
-        
+
         <button
           style={{ margin: '10px', padding: '10px 50px' }}
           onClick={() => setShowModal(true)}
