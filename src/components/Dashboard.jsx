@@ -199,6 +199,13 @@ const Dashboard = () => {
 
         <button
           style={{ margin: '10px', padding: '10px 50px' }}
+          onClick={fetchLikedMovies}
+        >
+          View Liked Movies
+        </button>
+
+        <button
+          style={{ margin: '10px', padding: '10px 50px' }}
           onClick={() => setShowModal(true)}
         >
           Update Subscriptions
