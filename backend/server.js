@@ -143,6 +143,65 @@ app.get('/get-streaming-services', async (req, res) => {
   }
 });
 
+// Endpoint: Search for Movies or Shows
+app.get('/search-movies-shows', async (req, res) => {
+  const { title } = req.query;
+
+  if (!title) {
+    return res.status(400).json({ message: 'Search query is required' });
+  }
+
+  try {
+    // Full-text search on the media table
+    const result = await pool.query(
+      `SELECT movie_id, title, type 
+       FROM streamly.media 
+       WHERE title_tsv @@ to_tsquery('english', $1)
+       LIMIT 10`,
+      [title.trim().replace(/\s+/g, ':* & ') + ':*'] // Convert input to full-text search format
+    );
+
+    res.status(200).json(result.rows);
+  } catch (error) {
+    console.error('Error searching movies and shows:', error);
+    res.status(500).json({ message: 'Internal server error' });
+  }
+});
+
+// Endpoint: Add a Liked Movie for a User
+app.post('/add-liked-movie-show', async (req, res) => {
+  const { user_id, movie_id } = req.body;
+
+  if (!user_id || !movie_id) {
+    return res.status(400).json({ message: 'User ID and Movie ID are required' });
+  }
+
+  try {
+    // Check if the record already exists
+    const checkResult = await pool.query(
+      `SELECT * FROM streamly.users_liked_movies WHERE user_id = $1 AND movie_id = $2`,
+      [user_id, movie_id]
+    );
+
+    if (checkResult.rows.length > 0) {
+      // If the record exists, inform the user
+      return res.status(200).json({ message: 'This movie or show is already in your liked list.' });
+    }
+
+    // Insert the record if it doesn't exist
+    await pool.query(
+      `INSERT INTO streamly.users_liked_movies (user_id, movie_id)
+       VALUES ($1, $2)`,
+      [user_id, movie_id]
+    );
+
+    res.status(200).json({ message: 'Movie or show added to liked movies/shows successfully.' });
+  } catch (error) {
+    console.error('Error adding liked movie or show:', error);
+    res.status(500).json({ message: 'Internal server error' });
+  }
+});
+
 // Start the server
 app.listen(port, () => {
   console.log(`Server running on http://localhost:${port}`);
