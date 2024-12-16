@@ -6,9 +6,11 @@ const Dashboard = () => {
   const navigate = useNavigate();
 
   const [showModal, setShowModal] = useState(false);
-  const [selectedServices, setSelectedServices] = useState([]); // Selected services in modal
-  const [userServices, setUserServices] = useState([]); // Current user services from DB
-
+  const [showLikedModal, setShowLikedModal] = useState(false); // Add this line
+  const [selectedServices, setSelectedServices] = useState([]); 
+  const [userServices, setUserServices] = useState([]); 
+  const [likedMovies, setLikedMovies] = useState([]);
+  
   const availableServices = ['Netflix', 'Hulu', 'Amazon Video']; // Static list of options
 
   useEffect(() => {
@@ -36,7 +38,19 @@ const Dashboard = () => {
     }
   };
   
-  
+  const fetchLikedMovies = async () => {
+    const user = JSON.parse(localStorage.getItem('user'));
+    try {
+      const response = await axios.get('http://localhost:3001/get-liked-movies', {
+        params: { user_id: user.user_id },
+      });
+      setLikedMovies(response.data.map((item) => `Movie ID: ${item.movie_id}`));
+      setShowLikedModal(true); // Show modal after fetching
+    } catch (error) {
+      console.error('Error fetching liked movies:', error);
+      alert('Failed to fetch liked movies.');
+    }
+  };
 
   // Handle logout
   const handleLogout = () => {
@@ -129,6 +143,25 @@ const Dashboard = () => {
       borderRadius: '5px',
       cursor: 'pointer',
     },
+    likedMoviesModal: {
+        position: 'fixed',
+        top: '50%',
+        left: '50%',
+        transform: 'translate(-50%, -50%)',
+        backgroundColor: '#333',
+        color: '#fff',
+        padding: '30px', // Increase padding
+        width: '400px', // Set a larger width
+        minHeight: '300px', // Set a larger height
+        borderRadius: '10px',
+        boxShadow: '0 2px 10px rgba(0, 0, 0, 0.5)',
+        display: 'flex', // Center content
+        flexDirection: 'column', // Stack elements vertically
+        justifyContent: 'center', // Center content vertically
+        alignItems: 'center', // Center content horizontally
+        textAlign: 'center', // Ensure text is centered
+      },
+      
   };
 
   const body = {
@@ -149,7 +182,14 @@ const Dashboard = () => {
 
       {/* Buttons */}
       <div style={body}>
-        <button style={{ margin: '10px', padding: '10px 50px' }}>Add Liked Movies</button>
+        <button style={{ margin: '10px', padding: '10px 50px' }}>Like Movies</button>
+        <button
+          style={{ margin: '10px', padding: '10px 50px' }}
+          onClick={fetchLikedMovies}
+        >
+          View Liked Movies
+        </button>
+
         <button
           style={{ margin: '10px', padding: '10px 50px' }}
           onClick={() => setShowModal(true)}
@@ -157,6 +197,9 @@ const Dashboard = () => {
           Update Subscriptions
         </button>
       </div>
+      
+
+      
 
       {/* Display current streaming services */}
       <div style={style.serviceList}>
@@ -178,6 +221,26 @@ const Dashboard = () => {
         <p style={{ textAlign: 'center', width: '100%' }}>Movie search filter options stuff here</p>
       </div>
 
+       {/* Liked Movies Modal */}
+        {showLikedModal && (
+        <div style={style.likedMoviesModal}>
+            <h3>Liked Movies</h3>
+            {likedMovies.length > 0 ? (
+            <ul>
+                {likedMovies.map((movie, index) => (
+                <li key={index}>{movie}</li>
+                ))}
+            </ul>
+            ) : (
+            <p>No liked movies yet.</p>
+            )}
+            <button style={style.modalButton} onClick={() => setShowLikedModal(false)}>
+            Close
+            </button>
+        </div>
+        )}
+    
+    
       {/* Modal for Streaming Services */}
       {showModal && (
         <div style={style.modal}>

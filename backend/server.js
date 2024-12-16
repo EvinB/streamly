@@ -143,6 +143,22 @@ app.get('/get-streaming-services', async (req, res) => {
   }
 });
 
+//get liked movies 
+app.get('/get-liked-movies', async (req, res) => {
+  const { user_id } = req.query;
+  try {
+    const result = await pool.query(
+      'SELECT movie_id FROM streamly.users_liked_movies WHERE user_id = $1',
+      [user_id]
+    );
+    res.json(result.rows);
+  } catch (error) {
+    console.error('Error fetching liked movies:', error);
+    res.status(500).json({ message: 'Failed to fetch liked movies.' });
+  }
+});
+
+
 // Start the server
 app.listen(port, () => {
   console.log(`Server running on http://localhost:${port}`);
