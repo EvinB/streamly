@@ -29,8 +29,19 @@ const Dashboard = () => {
 
   const ratings = ['1', '2', '3', '4', '5', '6', '7', '8', '9', '10'];
   const types = ['Movie', 'Show'];
-  const genres = ['Action', 'Comedy', 'Drama', 'Horror', 'Romance', 'Sci-Fi'];
+  const genres = ['Drama', 'Comedy', 'Action & Adventure', 'Thriller', 'Romance'];
   const availableServices = ['Netflix', 'Hulu', 'Amazon Video']; // Static list of options
+
+  const [showAllGenres, setShowAllGenres] = useState(false);
+  const allGenres = [
+    'Action & Adventure', 'Adult', 'Animation', 'Biography', 'Comedy',
+    'Crime', 'Documentary', 'Drama', 'Family', 'Fantasy',
+    'Film Noir', 'Game Show', 'History', 'Horror', 'Kids',
+    'Musical', 'Mystery', 'News', 'Reality', 'Romance',
+    'Science Fiction', 'Short', 'Soap', 'Sport', 'Talk Show',
+    'Thriller', 'TV Movie', 'War', 'Western'
+  ];
+
 
   useEffect(() => {
     const user = JSON.parse(localStorage.getItem('user'));
@@ -304,7 +315,23 @@ const Dashboard = () => {
                   {genre}
                 </label>
               ))}
+
+              {/* Select More Button */}
+              <button
+                onClick={() => setShowAllGenres(true)}
+                style={{
+                  marginTop: '10px',
+                  padding: '5px 10px',
+                  borderRadius: '5px',
+                  backgroundColor: '#555',
+                  color: '#fff',
+                  cursor: 'pointer'
+                }}
+              >
+                Select More
+              </button>
             </div>
+
 
             {/* Streaming Services Section */}
             <div>
@@ -499,6 +526,48 @@ const Dashboard = () => {
           onClose={() => setShowAddLikedModal(false)} // Close handler
         />
       )}
+
+      {/* Full Genre Modal */}
+      {showAllGenres && (
+        <div style={style.modal}>
+          <h3>Select Genres</h3>
+          
+          <div style={{
+            display: 'grid',
+            gridTemplateColumns: '1fr 1fr', // Two equal columns
+            gap: '10px', // Space between columns and rows
+            maxHeight: '400px', // Limit height
+            overflowY: 'auto' // Scroll if the content is too long
+          }}>
+            {allGenres.map((genre) => (
+              <label key={genre} style={{ display: 'flex', alignItems: 'center' }}>
+                <input
+                  type="checkbox"
+                  value={genre}
+                  onChange={(e) => {
+                    setSelectedGenre((prev) =>
+                      prev.includes(e.target.value)
+                        ? prev.filter((g) => g !== e.target.value)
+                        : [...prev, e.target.value]
+                    );
+                  }}
+                  style={{ marginRight: '8px' }}
+                  checked={selectedGenre.includes(genre)}
+                />
+                {genre}
+              </label>
+            ))}
+          </div>
+
+          <button
+            style={style.modalButton}
+            onClick={() => setShowAllGenres(false)}
+          >
+            Close
+          </button>
+        </div>
+      )}
+
 
     </div>
   );
