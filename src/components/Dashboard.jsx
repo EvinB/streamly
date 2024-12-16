@@ -16,7 +16,20 @@ const Dashboard = () => {
   const [selectedServices, setSelectedServices] = useState([]); 
   const [userServices, setUserServices] = useState([]); 
   const [likedMovies, setLikedMovies] = useState([]);
-  
+
+  //filter box options 
+  const [searchText, setSearchText] = useState('');
+  const [selectedGenre, setSelectedGenre] = useState([]);
+  const [selectedService, setSelectedService] = useState([]);
+  const [selectedType, setSelectedType] = useState([]);
+  const [selectedRating, setSelectedRating] = useState([1, 10]);
+
+
+
+
+  const ratings = ['1', '2', '3', '4', '5', '6', '7', '8', '9', '10'];
+  const types = ['Movie', 'Show'];
+  const genres = ['Action', 'Comedy', 'Drama', 'Horror', 'Romance', 'Sci-Fi'];
   const availableServices = ['Netflix', 'Hulu', 'Amazon Video']; // Static list of options
 
   useEffect(() => {
@@ -125,7 +138,17 @@ const Dashboard = () => {
       display: 'flex',
       alignItems: 'center',
       width: '80%',
-      height: '200px',
+      height: '300px',
+      border: '2px solid #444',
+      borderRadius: '10px',
+      overflowX: 'auto',
+      marginTop: '20px',
+    },
+    movieFilterBox: {
+      display: 'flex',
+      alignItems: 'center',
+      width: '80%',
+      height: '400px',
       border: '2px solid #444',
       borderRadius: '10px',
       overflowX: 'auto',
@@ -232,16 +255,197 @@ const Dashboard = () => {
             : "No streaming services selected yet."}
         </p>
         </div>
+      
+        {/* Movie recommendation box */}
+        <div style={style.movieRecBox}>
+          movie rec here
+        </div>
 
-      {/* Movie Recommendation Box */}
-      <div style={style.movieRecBox}>
-        <p style={{ textAlign: 'center', width: '100%' }}>Movie Recommendations Box</p>
+      {/* Movie search filter box =====================================================*/}
+      {/* Movie search filter box */}
+      <div style={style.movieFilterBox}>
+        <div
+          style={{
+            display: 'flex',
+            flexDirection: 'column',
+            alignItems: 'center',
+            width: '100%',
+            gap: '15px',
+            padding: '20px',
+            color: '#fff',
+          }}
+        >
+          {/* Filter Sections */}
+          <div
+            style={{
+              display: 'flex',
+              justifyContent: 'space-around',
+              width: '100%',
+              alignItems: 'flex-start',
+            }}
+          >
+            {/* Genres Section */}
+            <div>
+              <h4 style={{ marginBottom: '10px' }}>Genres</h4>
+              {genres.map((genre) => (
+                <label key={genre} style={{ display: 'block', marginBottom: '5px' }}>
+                  <input
+                    type="checkbox"
+                    value={genre}
+                    onChange={(e) => {
+                      setSelectedGenre((prev) =>
+                        prev.includes(e.target.value)
+                          ? prev.filter((g) => g !== e.target.value)
+                          : [...prev, e.target.value]
+                      );
+                    }}
+                    style={{ marginRight: '8px' }}
+                  />
+                  {genre}
+                </label>
+              ))}
+            </div>
+
+            {/* Streaming Services Section */}
+            <div>
+              <h4 style={{ marginBottom: '10px' }}>Streaming Services</h4>
+              {availableServices.map((service) => (
+                <label key={service} style={{ display: 'block', marginBottom: '5px' }}>
+                  <input
+                    type="checkbox"
+                    value={service}
+                    onChange={(e) => {
+                      setSelectedService((prev) =>
+                        prev.includes(e.target.value)
+                          ? prev.filter((s) => s !== e.target.value)
+                          : [...prev, e.target.value]
+                      );
+                    }}
+                    style={{ marginRight: '8px' }}
+                  />
+                  {service}
+                </label>
+              ))}
+            </div>
+            {/* Media Rating Section */}
+            <div>
+              <h4 style={{ marginBottom: '10px' }}>Rating</h4>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                <span>1</span>
+                <input
+                  type="range"
+                  min="1"
+                  max="10"
+                  step="1"
+                  value={selectedRating || 5} // Default to 5
+                  onChange={(e) => setSelectedRating(e.target.value)}
+                  style={{ width: '150px'}}
+                />
+                <span>10</span>
+              </div>
+              <p>Selected Rating: {selectedRating-1}+</p>
+            </div>
+
+
+            {/* Media Type Section */}
+            <div>
+              <h4 style={{ marginBottom: '10px' }}>Media Type</h4>
+              {types.map((type) => (
+                <label key={type} style={{ display: 'block', marginBottom: '5px' }}>
+                  <input
+                    type="checkbox"
+                    value={type}
+                    onChange={(e) => {
+                      setSelectedType((prev) =>
+                        prev.includes(e.target.value)
+                          ? prev.filter((t) => t !== e.target.value)
+                          : [...prev, e.target.value]
+                      );
+                    }}
+                    style={{ marginRight: '8px' }}
+                  />
+                  {type}
+                </label>
+              ))}
+            </div>
+            
+          </div>
+
+          {/* Search Bar */}
+          <div style={{ width: '100%', display: 'flex', justifyContent: 'center' }}>
+            <input
+              type="text"
+              placeholder="Add text to your search..."
+              value={searchText}
+              onChange={(e) => setSearchText(e.target.value)}
+              style={{
+                padding: '10px',
+                borderRadius: '5px',
+                border: '1px solid #555',
+                backgroundColor: '#222',
+                color: '#fff',
+                fontSize: '16px',
+                width: '50%',
+                marginTop: '10px',
+              }}
+            />
+          </div>
+
+          {/* Buttons */}
+          <div style={{ display: 'flex', gap: '15px', marginTop: '10px' }}>
+            <button
+              onClick={() => {
+                console.log('Search Filters:', {
+                  searchText,
+                  selectedGenre,
+                  selectedService,
+                  selectedType,
+                });
+                alert(
+                  `Search: ${searchText || 'None'}\nGenres: ${
+                    selectedGenre.join(', ') || 'None'
+                  }\nServices: ${
+                    selectedService.join(', ') || 'None'
+                  }\nType: ${selectedType.join(', ') || 'None'}`
+                );
+              }}
+              style={{
+                padding: '10px 20px',
+                borderRadius: '5px',
+                backgroundColor: '#555',
+                color: '#fff',
+                fontSize: '16px',
+                cursor: 'pointer',
+              }}
+            >
+              Search
+            </button>
+            <button
+              style={{
+                padding: '10px 20px',
+                borderRadius: '5px',
+                backgroundColor: '#777',
+                color: '#fff',
+                fontSize: '16px',
+                cursor: 'pointer',
+              }}
+              onClick={() => {
+                setSearchText('');
+                setSelectedGenre([]);
+                setSelectedService([]);
+                setSelectedType([]);
+                console.log('Filters reset');
+              }}
+            >
+              Reset
+            </button>
+          </div>
+        </div>
       </div>
 
-      {/* Movie Filter Box */}
-      <div style={style.movieRecBox}>
-        <p style={{ textAlign: 'center', width: '100%' }}>Movie search filter options stuff here</p>
-      </div>
+
+
+
 
        {/* Liked Movies Modal */}
         {showLikedModal && (
@@ -294,7 +498,7 @@ const Dashboard = () => {
           userId={JSON.parse(localStorage.getItem('user')).user_id}
           onClose={() => setShowAddLikedModal(false)} // Close handler
         />
-)}
+      )}
 
     </div>
   );
