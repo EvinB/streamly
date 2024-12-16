@@ -143,6 +143,55 @@ app.get('/get-streaming-services', async (req, res) => {
   }
 });
 
+// Endpoint: Search for Movies or Shows
+app.get('/search-movies-shows', async (req, res) => {
+  const { title } = req.query;
+
+  if (!title) {
+    return res.status(400).json({ message: 'Search query is required' });
+  }
+
+  try {
+    // Full-text search on the media table
+    const result = await pool.query(
+      `SELECT movie_id, title, type 
+       FROM streamly.media 
+       WHERE title_tsv @@ to_tsquery('english', $1)
+       LIMIT 10`,
+      [title.trim().replace(/\s+/g, ':* & ') + ':*'] // Convert input to full-text search format
+    );
+
+    res.status(200).json(result.rows);
+  } catch (error) {
+    console.error('Error searching movies:', error);
+    res.status(500).json({ message: 'Internal server error' });
+  }
+});
+
+// Endpoint: Add a Liked Movie for a User
+app.post('/add-liked-movie-show', async (req, res) => {
+  const { user_id, movie_id } = req.body;
+
+  if (!user_id || !movie_id) {
+    return res.status(400).json({ message: 'User ID and Movie ID are required' });
+  }
+
+  try {
+    // Insert into users_liked_movies table, handle duplicates with ON CONFLICT
+    await pool.query(
+      `INSERT INTO streamly.users_liked_movies (user_id, movie_id)
+       VALUES ($1, $2)
+       ON CONFLICT DO NOTHING`,
+      [user_id, movie_id]
+    );
+
+    res.status(200).json({ message: 'Movie added to liked movies successfully' });
+  } catch (error) {
+    console.error('Error adding liked movie:', error);
+    res.status(500).json({ message: 'Internal server error' });
+  }
+});
+
 // Start the server
 app.listen(port, () => {
   console.log(`Server running on http://localhost:${port}`);

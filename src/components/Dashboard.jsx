@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import axios from 'axios';
+import AddLiked from './AddLiked';
 
 const Dashboard = () => {
   const navigate = useNavigate();
@@ -9,6 +10,7 @@ const Dashboard = () => {
   const [selectedServices, setSelectedServices] = useState([]); // Selected services in modal
   const [userServices, setUserServices] = useState([]); // Current user services from DB
 
+  const [showAddLikedModal, setShowAddLikedModal] = useState(false);
   const availableServices = ['Netflix', 'Hulu', 'Amazon Video']; // Static list of options
 
   useEffect(() => {
@@ -149,7 +151,13 @@ const Dashboard = () => {
 
       {/* Buttons */}
       <div style={body}>
-        <button style={{ margin: '10px', padding: '10px 50px' }}>Add Liked Movies</button>
+        <button 
+          style={{ margin: '10px', padding: '10px 50px' }}
+          onClick={() => setShowAddLikedModal(true)}
+        >
+          Add Liked Movies
+        </button>
+        
         <button
           style={{ margin: '10px', padding: '10px 50px' }}
           onClick={() => setShowModal(true)}
@@ -200,6 +208,14 @@ const Dashboard = () => {
           </button>
         </div>
       )}
+
+      {showAddLikedModal && (
+        <AddLiked
+          userId={JSON.parse(localStorage.getItem('user')).user_id}
+          onClose={() => setShowAddLikedModal(false)} // Close handler
+        />
+)}
+
     </div>
   );
 };
