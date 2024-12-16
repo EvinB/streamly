@@ -50,13 +50,21 @@ const Dashboard = () => {
       const response = await axios.get('http://localhost:3001/get-liked-movies', {
         params: { user_id: user.user_id },
       });
-      setLikedMovies(response.data.map((item) => `Movie ID: ${item.movie_id}`));
+  
+      // Map response to display title and streaming services
+      setLikedMovies(
+        response.data.map((movie) => ({
+          title: movie.title,
+          streamingServices: movie.streaming_services.join(', '), // Combine services into a string
+        }))
+      );
       setShowLikedModal(true); // Show modal after fetching
     } catch (error) {
       console.error('Error fetching liked movies:', error);
       alert('Failed to fetch liked movies.');
     }
   };
+  
 
   // Handle logout
   const handleLogout = () => {
@@ -237,21 +245,24 @@ const Dashboard = () => {
 
        {/* Liked Movies Modal */}
         {showLikedModal && (
-        <div style={style.likedMoviesModal}>
+          <div style={style.likedMoviesModal}>
             <h3>Liked Movies</h3>
             {likedMovies.length > 0 ? (
-            <ul>
+              <ul style={{ listStyleType: 'none', padding: 0 }}>
                 {likedMovies.map((movie, index) => (
-                <li key={index}>{movie}</li>
+                  <li key={index} style={{ marginBottom: '10px' }}>
+                    <strong>{movie.title}</strong> <br />
+                    Available on: {movie.streamingServices || 'Not available on any service'}
+                  </li>
                 ))}
-            </ul>
+              </ul>
             ) : (
-            <p>No liked movies yet.</p>
+              <p>No liked movies yet.</p>
             )}
             <button style={style.modalButton} onClick={() => setShowLikedModal(false)}>
-            Close
+              Close
             </button>
-        </div>
+          </div>
         )}
     
     

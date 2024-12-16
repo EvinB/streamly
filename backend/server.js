@@ -207,12 +207,23 @@ app.post('/add-liked-movie-show', async (req, res) => {
 //get liked movies 
 app.get('/get-liked-movies', async (req, res) => {
   const { user_id } = req.query;
+
+  if (!user_id) {
+    return res.status(400).json({ message: 'User ID is required' });
+  }
+
   try {
     const result = await pool.query(
-      'SELECT movie_id FROM streamly.users_liked_movies WHERE user_id = $1',
+      `SELECT m.movie_id, m.title, array_agg(a.streaming_service_name) AS streaming_services
+       FROM streamly.users_liked_movies ulm
+       JOIN streamly.media m ON ulm.movie_id = m.movie_id
+       LEFT JOIN streamly.availability a ON m.movie_id = a.movie_id
+       WHERE ulm.user_id = $1
+       GROUP BY m.movie_id, m.title`,
       [user_id]
     );
-    res.json(result.rows);
+
+    res.json(result.rows); // Return movie details including title and streaming services
   } catch (error) {
     console.error('Error fetching liked movies:', error);
     res.status(500).json({ message: 'Failed to fetch liked movies.' });
