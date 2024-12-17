@@ -121,7 +121,10 @@ app.post('/update-streaming-services', async (req, res) => {
     );
     await Promise.all(insertQueries);
 
-    await redis.del(`user:${user_id}:recommendations`); // Invalidate cache
+    await redis.del(`user:${user_id}:subscriptions`); // Invalidate subscriptions cache
+    console.log(`Cache invalidated for user ${user_id}: subscriptions`);
+
+    await redis.del(`user:${user_id}:recommendations`); // Invalidate recommendations cache
     console.log(`Cache invalidated for user ${user_id}`);
 
     res.status(200).json({ message: 'Streaming services updated successfully' });
@@ -139,12 +142,24 @@ app.get('/get-streaming-services', async (req, res) => {
     return res.status(400).json({ message: 'User ID is required' });
   }
 
+  const cacheKey = `user:${user_id}:subscriptions`;
+
   try {
+    // Check Redis cache
+    const cachedSubscriptions = await redis.get(cacheKey);
+    if (cachedSubscriptions) {
+      console.log('Cache hit: Subscriptions');
+      return res.status(200).json(JSON.parse(cachedSubscriptions));
+    }
+
     // Query the database to get streaming services for the user
     const result = await pool.query(
       'SELECT streaming_service_name FROM streamly.users_streaming_services WHERE user_id = $1',
       [user_id]
     );
+
+    // Cache result
+    await redis.set(cacheKey, JSON.stringify(result.rows.map(row => row.streaming_service_name)), 'EX', 86400);
 
     // Send the list of streaming services back
     res.json(result.rows.map((row) => row.streaming_service_name));
@@ -207,6 +222,10 @@ app.post('/add-liked-movie-show', async (req, res) => {
       [user_id, movie_id]
     );
 
+    // Invalidate cache
+    await redis.del(`user:${user_id}:liked_movies`);
+    console.log(`Cache invalidated for user ${user_id}: liked_movies`);
+
     // Invalidate Redis cache
     await redis.del(`user:${user_id}:recommendations`);
     console.log(`Cache invalidated for user ${user_id}`);
@@ -227,7 +246,16 @@ app.get('/get-liked-movies', async (req, res) => {
     return res.status(400).json({ message: 'User ID is required' });
   }
 
+  const cacheKey = `user:${user_id}:liked_movies`;
+
   try {
+    // Check Redis cache
+    const cachedMovies = await redis.get(cacheKey);
+    if (cachedMovies) {
+      console.log('Cache hit: Liked movies');
+      return res.status(200).json(JSON.parse(cachedMovies));
+    }
+
     const result = await pool.query(
       `SELECT m.movie_id, m.title, array_agg(a.streaming_service_name) AS streaming_services
        FROM streamly.users_liked_movies ulm
@@ -237,6 +265,10 @@ app.get('/get-liked-movies', async (req, res) => {
        GROUP BY m.movie_id, m.title`,
       [user_id]
     );
+
+    // Cache the result in Redis
+    await redis.set(cacheKey, JSON.stringify(result.rows), 'EX', 86400); // Cache for 1 day
+    console.log('Cache miss: Fetched liked movies from DB');
 
     res.json(result.rows); // Return movie details including title and streaming services
   } catch (error) {
@@ -253,10 +285,10 @@ app.get('/recommend-movies', async (req, res) => {
     return res.status(400).json({ message: 'User ID is required' });
   }
 
-  try {
-    // Define Redis cache key
-    const cacheKey = `user:${user_id}:recommendations`;
+  // Define Redis cache key
+  const cacheKey = `user:${user_id}:recommendations`;
 
+  try {
     // Check Redis for cached recommendations
     const cachedRecommendations = await redis.get(cacheKey);
 
@@ -335,7 +367,7 @@ app.get('/recommend-movies', async (req, res) => {
     const recommendationsWithPosters = await Promise.all(
       recommendations.map(async (rec) => {
         try {
-          console.log(`Fetching poster for: ${rec.title}, IMDb ID: ${rec.imdb_id}`);
+          // console.log(`Fetching poster for: ${rec.title}, IMDb ID: ${rec.imdb_id}`);
 
           // Use GET request with Bearer Token
           const response = await axios.get(
@@ -351,11 +383,12 @@ app.get('/recommend-movies', async (req, res) => {
             }
           );
 
-          console.log(`TMDB Response for ${rec.title}:`, JSON.stringify(response.data, null, 2));
+          // console.log(`TMDB Response for ${rec.title}:`, JSON.stringify(response.data, null, 2));
 
           // Extract poster path
           const posterPath = response.data.movie_results[0]?.poster_path;
-          console.log(`Poster Path for ${rec.title}:`, posterPath);
+
+          // console.log(`Poster Path for ${rec.title}:`, posterPath);
 
           return {
             ...rec,
@@ -369,7 +402,7 @@ app.get('/recommend-movies', async (req, res) => {
     );
 
     // Cache the recommendations in Redis
-    await redis.set(cacheKey, JSON.stringify(recommendationsWithPosters), 'EX', 3600);
+    await redis.set(cacheKey, JSON.stringify(recommendationsWithPosters), 'EX', 86400);
 
     // Return recommendations to the client
     res.status(200).json({ recommendations: recommendationsWithPosters });
@@ -513,8 +546,10 @@ app.post('/update-regions', async (req, res) => {
     );
     await Promise.all(insertQueries);
 
-    // Invalidate Redis cache
-    await redis.del(`user:${user_id}:recommendations`);
+    await redis.del(`user:${user_id}:regions`); // Invalidate regions cache
+    console.log(`Cache invalidated for user ${user_id}`);
+
+    await redis.del(`user:${user_id}:recommendations`); // Invalidate recommendations cache
     console.log(`Cache invalidated for user ${user_id}`);
 
     res.status(200).json({ message: 'Regions updated successfully' });
@@ -534,7 +569,16 @@ app.get('/get-user-regions', async (req, res) => {
     return res.status(400).json({ message: 'User ID is required' });
   }
 
+  const cacheKey = `user:${user_id}:regions`;
+
   try {
+    // Check Redis cache
+    const cachedRegions = await redis.get(cacheKey);
+    if (cachedRegions) {
+      console.log('Cache hit: Regions');
+      return res.status(200).json(JSON.parse(cachedRegions));
+    }
+
     const result = await pool.query(
       `SELECT country_id 
        FROM streamly.users_countries 
@@ -542,7 +586,12 @@ app.get('/get-user-regions', async (req, res) => {
       [user_id]
     );
 
+    // Process result
     const countryIds = result.rows.map((row) => row.country_id);
+
+    // Cache result
+    await redis.set(cacheKey, JSON.stringify(countryIds), 'EX', 86400);
+
     res.json(countryIds);
   } catch (error) {
     console.error('Error fetching user regions:', error);
