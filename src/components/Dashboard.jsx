@@ -25,7 +25,7 @@ const Dashboard = () => {
   const [selectedService, setSelectedService] = useState([]);
   const [selectedType, setSelectedType] = useState([]);
   const [selectedRating, setSelectedRating] = useState([1, 10]);
-
+  const [searchSelectedServices, setSearchSelectedServices] = useState([]);
 
   //store search results 
   const [searchResults, setSearchResults] = useState([]);
@@ -78,6 +78,7 @@ const Dashboard = () => {
   
       setUserServices(response.data); // Directly set the array
       setSelectedServices(response.data); // Pre-check in modal
+      setSearchSelectedServices(response.data);
     } catch (error) {
       console.error('Error fetching user services:', error);
     }
@@ -142,7 +143,7 @@ const Dashboard = () => {
     const filters = {
       searchText,
       selectedGenre: selectedGenre.join(','), // Convert array to comma-separated string
-      selectedService: selectedService.join(','),
+      selectedService:  searchSelectedServices.join(','),
       selectedType: selectedType.join(','),
       selectedRating, // Send as a single value
     };
@@ -199,6 +200,7 @@ const Dashboard = () => {
       alert('Regions updated successfully!');
       setShowRegionsModal(false);
     } catch (error) {
+      
       console.error('Error updating regions:', error);
       alert('Failed to update regions.');
     }
@@ -513,11 +515,13 @@ const Dashboard = () => {
                   <input
                     type="checkbox"
                     value={service}
+                    checked={searchSelectedServices.includes(service)}
                     onChange={(e) => {
-                      setSelectedService((prev) =>
-                        prev.includes(e.target.value)
-                          ? prev.filter((s) => s !== e.target.value)
-                          : [...prev, e.target.value]
+                      const selectedService = e.target.value;
+                      setSearchSelectedServices((prev) =>
+                        prev.includes(selectedService)
+                          ? prev.filter((s) => s !== selectedService) // Deselect
+                          : [...prev, selectedService] // Select
                       );
                     }}
                     style={{ marginRight: '8px' }}
