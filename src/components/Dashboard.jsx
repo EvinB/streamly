@@ -181,7 +181,7 @@ const Dashboard = () => {
         genre: movie.genre.join(', '), // Join genres into a single string
       }));
   
-      setSearchResults(formattedResults.slice(0, 20)); // Limit to 20 results
+      setSearchResults(formattedResults.slice(0, 60)); // Limit to 20 results
     } catch (error) {
       console.error('Error fetching media:', error);
       alert('Failed to fetch media.');

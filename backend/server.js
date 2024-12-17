@@ -290,7 +290,8 @@ app.get('/search-media', async (req, res) => {
 
     query += `
       GROUP BY m.movie_id, m.title, m.type, m.imdb_rating, mg.genre
-      ORDER BY m.title;
+      ORDER BY m.title
+      LIMIT 200;
     `;
 
     // Execute the query
