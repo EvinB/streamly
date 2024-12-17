@@ -2,6 +2,8 @@ import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import axios from 'axios';
 import AddLiked from './AddLiked';
+import SelectRegions from './SelectRegions';
+
 
 const Dashboard = () => {
   const navigate = useNavigate();
@@ -27,6 +29,10 @@ const Dashboard = () => {
 
   //store search results 
   const [searchResults, setSearchResults] = useState([]);
+
+  //region handling 
+  const [showRegionsModal, setShowRegionsModal] = useState(false);
+  const [selectedRegions, setSelectedRegions] = useState([]);
 
 
 
@@ -380,6 +386,12 @@ const Dashboard = () => {
         >
           Update Subscriptions
         </button>
+        <button
+          style={{ margin: '10px', padding: '10px 50px' }}
+          onClick={() => setShowRegionsModal(true)}
+        >
+          Select Regions
+        </button>
       </div>
       
 
@@ -611,7 +623,6 @@ const Dashboard = () => {
         </div>
 
 
-      
 
 
        {/* Liked Movies Modal */}
@@ -706,6 +717,15 @@ const Dashboard = () => {
             Close
           </button>
         </div>
+      )}
+
+      {/* Regions popup*/}
+      {showRegionsModal && (
+        <SelectRegions
+          selectedRegions={selectedRegions}
+          setSelectedRegions={setSelectedRegions}
+          onClose={() => setShowRegionsModal(false)}
+        />
       )}
 
 
