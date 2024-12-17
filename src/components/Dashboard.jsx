@@ -246,7 +246,7 @@ const Dashboard = () => {
       display: 'flex',
       alignItems: 'center',
       width: '80%',
-      height: '300px',
+      height: '600px',
       border: '2px solid #444',
       borderRadius: '10px',
       overflowX: 'auto',
@@ -440,14 +440,17 @@ const Dashboard = () => {
             ? userServices.join(", ") // Join the services with commas
             : "No streaming services selected yet."}
         </p>
-        </div>
+      </div>
       
-        {/* Movie recommendation box */}
-        <div style={style.movieRecBox}>
-          movie rec here
-        </div>
+      {/* Movie recommendation box */}
+      <div style={{
+        ...style.movieRecBox,
+        overflow: 'visible', // Allow overflow for the carousel
+        position: 'relative', // Position the carousel
+      }}>
+        <GetRecs userId={JSON.parse(localStorage.getItem('user')).user_id} />
+      </div>
 
-      {/* Movie search filter box =====================================================*/}
       {/* Movie search filter box */}
       <div style={style.movieFilterBox}>
         <div
@@ -551,12 +554,6 @@ const Dashboard = () => {
             </div>
 
 
-            {/* Movie Recommendation Box */}
-            <div style={style.movieRecBox}>
-              <GetRecs userId={JSON.parse(localStorage.getItem('user')).user_id} />
-            </div>
-
-
             {/* Media Type Section */}
             <div>
               <h4 style={{ marginBottom: '10px' }}>Media Type</h4>
@@ -646,7 +643,17 @@ const Dashboard = () => {
             searchResults.map((movie, index) => (
               <div key={index} style={ResultStyles.tile}>
                 {/* Image Placeholder */}
-                <div style={ResultStyles.placeholderImage}></div>
+                <div style={ResultStyles.placeholderImage}>
+                  {movie.posterUrl ? (
+                    <img
+                      src={movie.posterUrl}
+                      alt={movie.title}
+                      style={{ width: '100%', height: '100%', objectFit: 'cover' }}
+                    />
+                  ) : (
+                    <span style={{ color: '#ccc', fontSize: '12px' }}>No Image Available</span>
+                  )}
+                </div>
                 
                 {/* Tile Content */}
                 <div style={ResultStyles.tileContent}>

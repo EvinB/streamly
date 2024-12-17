@@ -6,9 +6,17 @@ const bodyParser = require('body-parser');
 const bcrypt = require('bcrypt');
 const cors = require('cors'); // Import CORS middleware
 const { Pool } = require('pg');
+const Redis = require('ioredis');
+const axios = require('axios');
 
 const app = express();
 const port = 3001;
+
+// Connect to Redis
+const redis = new Redis({
+  host: process.env.REDIS_HOST,
+  port: process.env.REDIS_PORT,
+});
 
 // Database connection configuration
 const pool = new Pool({
@@ -54,7 +62,7 @@ app.post('/register', async (req, res) => {
   }
 });
 
-// Endpoint: User Login
+// User Login
 app.post('/login', async (req, res) => {
   const { user_name, password } = req.body;
 
@@ -113,6 +121,9 @@ app.post('/update-streaming-services', async (req, res) => {
     );
     await Promise.all(insertQueries);
 
+    await redis.del(`user:${user_id}:recommendations`); // Invalidate cache
+    console.log(`Cache invalidated for user ${user_id}`);
+
     res.status(200).json({ message: 'Streaming services updated successfully' });
   } catch (error) {
     console.error('Error updating streaming services:', error);
@@ -120,7 +131,7 @@ app.post('/update-streaming-services', async (req, res) => {
   }
 });
 
-//get the users streaming platforms 
+// Get the users streaming platforms 
 app.get('/get-streaming-services', async (req, res) => {
   const { user_id } = req.query; // Extract user_id from query params
 
@@ -144,7 +155,7 @@ app.get('/get-streaming-services', async (req, res) => {
 });
 
 
-// Endpoint: Search for Movies or Shows
+// Search for Movies or Shows
 app.get('/search-movies-shows', async (req, res) => {
   const { title } = req.query;
 
@@ -169,7 +180,7 @@ app.get('/search-movies-shows', async (req, res) => {
   }
 });
 
-// Endpoint: Add a Liked Movie for a User
+// Add a Liked Movie for a User
 app.post('/add-liked-movie-show', async (req, res) => {
   const { user_id, movie_id } = req.body;
 
@@ -196,6 +207,10 @@ app.post('/add-liked-movie-show', async (req, res) => {
       [user_id, movie_id]
     );
 
+    // Invalidate Redis cache
+    await redis.del(`user:${user_id}:recommendations`);
+    console.log(`Cache invalidated for user ${user_id}`);
+
     res.status(200).json({ message: 'Movie or show added to liked movies/shows successfully.' });
   } catch (error) {
     console.error('Error adding liked movie or show:', error);
@@ -204,7 +219,7 @@ app.post('/add-liked-movie-show', async (req, res) => {
 });
 
 
-//get liked movies 
+// Get users liked movies and shows
 app.get('/get-liked-movies', async (req, res) => {
   const { user_id } = req.query;
 
@@ -230,7 +245,7 @@ app.get('/get-liked-movies', async (req, res) => {
   }
 });
 
-// Endpoint: Get Recommendations for a User
+// Get recommendations for the user
 app.get('/recommend-movies', async (req, res) => {
   const { user_id } = req.query;
 
@@ -239,10 +254,23 @@ app.get('/recommend-movies', async (req, res) => {
   }
 
   try {
-    // Step 1: Set the search path to include the 'streamly' schema
+    // Define Redis cache key
+    const cacheKey = `user:${user_id}:recommendations`;
+
+    // Check Redis for cached recommendations
+    const cachedRecommendations = await redis.get(cacheKey);
+
+    if (cachedRecommendations) {
+      console.log('Cache hit: Serving recommendations from Redis');
+      return res.status(200).json({ recommendations: JSON.parse(cachedRecommendations) });
+    }
+
+    console.log('Cache miss: Fetching recommendations from PostgreSQL');
+
+    // Set search path
     await pool.query(`SET search_path TO streamly, public;`);
 
-    // Step 2: Sum and normalize all dimensions of genres_cube for the user's liked movies
+    // Sum and normalize all dimensions of genres_cube for the user's liked movies
     const normalizedCubeResult = await pool.query(
       `SELECT cube(array_agg(dimension_weight)) AS weighted_cube
        FROM (
@@ -263,35 +291,92 @@ app.get('/recommend-movies', async (req, res) => {
 
     const weightedCube = normalizedCubeResult.rows[0]?.weighted_cube;
 
-    // Step 3: Check if the weighted cube exists
+    // Check if the weighted cube exists
     if (!weightedCube) {
       return res.status(200).json({ message: 'No liked movies to base recommendations on.', recommendations: [] });
     }
 
-    // Step 4: Fetch recommended movies filtered by user's streaming services
-    const recommendations = await pool.query(
-      `SELECT m.movie_id, m.title, m.type, m.imdb_rating
-       FROM streamly.media m
-       JOIN streamly.availability a 
-         ON m.movie_id = a.movie_id
-       JOIN streamly.users_streaming_services uss 
-         ON LOWER(a.streaming_service_name) = LOWER(uss.streaming_service_name)
-       WHERE uss.user_id = $1
-         AND m.genres_cube IS NOT NULL
-         AND m.movie_id NOT IN (
-           SELECT ulm.movie_id 
-           FROM streamly.users_liked_movies ulm 
-           WHERE ulm.user_id = $1
-         )
-       ORDER BY m.genres_cube <-> $2::cube
-       LIMIT 10`,
+    // Fetch recommended movies filtered by user's countries and streaming services
+    const recommendationsResult = await pool.query(
+      `SELECT 
+        m.movie_id, 
+        m.title, 
+        m.type, 
+        m.imdb_id,
+        m.imdb_rating,
+        array_agg(DISTINCT a.streaming_service_name) AS streaming_services
+      FROM streamly.media m
+      JOIN streamly.availability a 
+        ON m.movie_id = a.movie_id
+      JOIN streamly.users_streaming_services uss 
+        ON LOWER(a.streaming_service_name) = LOWER(uss.streaming_service_name)
+      JOIN streamly.users_countries uc 
+        ON uc.user_id = $1
+      JOIN streamly.media_available_countries ac
+        ON m.movie_id = ac.movie_id AND uc.country_id = ac.country_id
+      WHERE uss.user_id = $1
+        AND m.genres_cube IS NOT NULL
+        AND m.movie_id NOT IN (
+          SELECT ulm.movie_id 
+          FROM streamly.users_liked_movies ulm 
+          WHERE ulm.user_id = $1
+        )
+      GROUP BY m.movie_id, m.title, m.type, m.imdb_rating
+      ORDER BY MIN(m.genres_cube <-> $2::cube)
+      LIMIT 30;`,
       [user_id, weightedCube]
     );
 
-    // Step 5: Return recommendations to the client
-    res.status(200).json({ recommendations: recommendations.rows });
+    const recommendations = recommendationsResult.rows;
+
+    // Perform POST requests to fetch movie/show posters from TMDB
+    const TMDB_BEARER_TOKEN = process.env.TMDB_BEARER_TOKEN;
+
+    const recommendationsWithPosters = await Promise.all(
+      recommendations.map(async (rec) => {
+        try {
+          console.log(`Fetching poster for: ${rec.title}, IMDb ID: ${rec.imdb_id}`);
+
+          // Use GET request with Bearer Token
+          const response = await axios.get(
+            `https://api.themoviedb.org/3/find/${rec.imdb_id}`, 
+            {
+              headers: {
+                accept: 'application/json',
+                Authorization: `Bearer ${TMDB_BEARER_TOKEN}`, 
+              },
+              params: {
+                external_source: 'imdb_id', // IMDb search
+              },
+            }
+          );
+
+          console.log(`TMDB Response for ${rec.title}:`, JSON.stringify(response.data, null, 2));
+
+          // Extract poster path
+          const posterPath = response.data.movie_results[0]?.poster_path;
+          console.log(`Poster Path for ${rec.title}:`, posterPath);
+
+          return {
+            ...rec,
+            posterUrl: posterPath ? `https://image.tmdb.org/t/p/w500${posterPath}` : null,
+          };
+        } catch (error) {
+          console.error(`Error fetching poster for ${rec.title}:`, error);
+          return { ...rec, posterUrl: null }; // Fallback if poster fetch fails
+        }
+      })
+    );
+
+    // Cache the recommendations in Redis
+    await redis.set(cacheKey, JSON.stringify(recommendationsWithPosters), 'EX', 3600);
+
+    // Return recommendations to the client
+    res.status(200).json({ recommendations: recommendationsWithPosters });
+    console.log('Recommendations fetched from PostgreSQL and TMDB');
   } catch (error) {
     console.error('Error fetching recommendations:', error);
+    res.status(500).json({ message: 'Internal server error' });
   }
 });
 
@@ -303,6 +388,7 @@ app.get('/search-media', async (req, res) => {
       SELECT 
         m.title, 
         m.type, 
+        m.imdb_id,
         m.imdb_rating AS rating, 
         mg.genre, 
         array_agg(DISTINCT a.streaming_service_name) AS services
@@ -316,12 +402,12 @@ app.get('/search-media', async (req, res) => {
 
     // Title search filter
     if (searchText) {
-      query += ` AND m.title ILIKE $${paramIndex}`;
-      params.push(`%${searchText}%`);
+      query += ` AND m.title_tsv @@ to_tsquery('english', $${paramIndex})`;
+      params.push(searchText.trim().replace(/\s+/g, ':* & ') + ':*'); // Format searchText for to_tsquery
       paramIndex++;
     }
 
-        // Genre filter
+    // Genre filter
     if (selectedGenre) {
       const genresArray = selectedGenre.split(',').map(g => g.trim());
       query += ` AND mg.genre = ANY($${paramIndex})`;
@@ -364,8 +450,42 @@ app.get('/search-media', async (req, res) => {
     console.log('Executing Query:', query);
 
     const result = await pool.query(query, params);
-    console.log('Filtered Media Results:', result.rows); // Log the rows correctly
-    res.status(200).json(result.rows);
+
+    // TMDB Bearer Token
+    const TMDB_BEARER_TOKEN = process.env.TMDB_BEARER_TOKEN;
+
+    // Fetch posters for each media entry using IMDb ID
+    const mediaWithPosters = await Promise.all(
+      result.rows.map(async (media) => {
+        try {
+          const response = await axios.get(
+            `https://api.themoviedb.org/3/find/${media.imdb_id}`,
+            {
+              headers: {
+                accept: 'application/json',
+                Authorization: `Bearer ${TMDB_BEARER_TOKEN}`,
+              },
+              params: { external_source: 'imdb_id' },
+            }
+          );
+
+          // Extract poster path
+          const posterPath = response.data.movie_results?.[0]?.poster_path;
+          return {
+            ...media,
+            posterUrl: posterPath
+              ? `https://image.tmdb.org/t/p/w500${posterPath}`
+              : null,
+          };
+        } catch (error) {
+          console.error(`Error fetching poster for ${media.title}:`, error.message);
+          return { ...media, posterUrl: null }; // Return null if poster fetch fails
+        }
+      })
+    );
+
+    console.log('Filtered Media Results:', mediaWithPosters); // Log the rows correctly
+    res.status(200).json(mediaWithPosters);
   } catch (error) {
     console.error('Error fetching filtered media:', error);
 
@@ -392,6 +512,10 @@ app.post('/update-regions', async (req, res) => {
       )
     );
     await Promise.all(insertQueries);
+
+    // Invalidate Redis cache
+    await redis.del(`user:${user_id}:recommendations`);
+    console.log(`Cache invalidated for user ${user_id}`);
 
     res.status(200).json({ message: 'Regions updated successfully' });
   } catch (error) {
@@ -425,8 +549,6 @@ app.get('/get-user-regions', async (req, res) => {
     res.status(500).json({ message: 'Internal server error' });
   }
 });
-
-
 
 
 // Start the server
