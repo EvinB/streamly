@@ -246,7 +246,7 @@ const Dashboard = () => {
       display: 'flex',
       alignItems: 'center',
       width: '80%',
-      height: '300px',
+      height: '600px',
       border: '2px solid #444',
       borderRadius: '10px',
       overflowX: 'auto',
@@ -643,7 +643,17 @@ const Dashboard = () => {
             searchResults.map((movie, index) => (
               <div key={index} style={ResultStyles.tile}>
                 {/* Image Placeholder */}
-                <div style={ResultStyles.placeholderImage}></div>
+                <div style={ResultStyles.placeholderImage}>
+                  {movie.posterUrl ? (
+                    <img
+                      src={movie.posterUrl}
+                      alt={movie.title}
+                      style={{ width: '100%', height: '100%', objectFit: 'cover' }}
+                    />
+                  ) : (
+                    <span style={{ color: '#ccc', fontSize: '12px' }}>No Image Available</span>
+                  )}
+                </div>
                 
                 {/* Tile Content */}
                 <div style={ResultStyles.tileContent}>
