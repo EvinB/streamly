@@ -33,9 +33,9 @@ const Dashboard = () => {
 
 
   const ratings = ['1', '2', '3', '4', '5', '6', '7', '8', '9', '10'];
-  const types = ['Movie', 'Show'];
+  const types = ['movie', 'tv'];
   const genres = ['Drama', 'Comedy', 'Action & Adventure', 'Thriller', 'Romance'];
-  const availableServices = ['netflix', 'hulu', 'amazon video']; // Static list of options
+  const availableServices = ['netflix', 'hulu', 'amazon']; // Static list of options
 
   const [showAllGenres, setShowAllGenres] = useState(false);
   const allGenres = [
@@ -143,13 +143,40 @@ const Dashboard = () => {
       });
   
       console.log('Filtered Media Results:', response.data);
-      alert(JSON.stringify(response.data, null, 2)); // Display results
-      setSearchResults(response.data.slice(0, 100)); 
+  
+      // Group results by title to combine genres
+      const groupedResults = response.data.reduce((acc, movie) => {
+        const existingMovie = acc.find((m) => m.title === movie.title);
+  
+        if (existingMovie) {
+          // If movie already exists, add new genre to its list
+          if (!existingMovie.genre.includes(movie.genre)) {
+            existingMovie.genre.push(movie.genre);
+          }
+        } else {
+          // If new movie, add it to the accumulator
+          acc.push({
+            ...movie,
+            genre: [movie.genre], // Initialize genre as an array
+          });
+        }
+  
+        return acc;
+      }, []);
+  
+      // Format genres as a comma-separated string
+      const formattedResults = groupedResults.map((movie) => ({
+        ...movie,
+        genre: movie.genre.join(', '), // Join genres into a single string
+      }));
+  
+      setSearchResults(formattedResults.slice(0, 20)); // Limit to 20 results
     } catch (error) {
       console.error('Error fetching media:', error);
       alert('Failed to fetch media.');
     }
   };
+  
   
   
   // Styling
