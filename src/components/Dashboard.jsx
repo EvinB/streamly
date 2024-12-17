@@ -2,16 +2,14 @@ import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import axios from 'axios';
 import AddLiked from './AddLiked';
+import GetRecs from './GetRecs';
 
 const Dashboard = () => {
   const navigate = useNavigate();
 
   const [showModal, setShowModal] = useState(false);
-
-
-
   const [showAddLikedModal, setShowAddLikedModal] = useState(false);
-
+  const [recommendations, setRecommendations] = useState([]);
   const [showLikedModal, setShowLikedModal] = useState(false); // Add this line
   const [selectedServices, setSelectedServices] = useState([]); 
   const [userServices, setUserServices] = useState([]); 
@@ -235,7 +233,7 @@ const Dashboard = () => {
 
       {/* Movie Recommendation Box */}
       <div style={style.movieRecBox}>
-        <p style={{ textAlign: 'center', width: '100%' }}>Movie Recommendations Box</p>
+        <GetRecs userId={JSON.parse(localStorage.getItem('user')).user_id} />
       </div>
 
       {/* Movie Filter Box */}
