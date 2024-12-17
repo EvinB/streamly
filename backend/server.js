@@ -355,7 +355,7 @@ app.get('/recommend-movies', async (req, res) => {
         )
       GROUP BY m.movie_id, m.title, m.type, m.imdb_rating
       ORDER BY MIN(m.genres_cube <-> $2::cube)
-      LIMIT 30;`,
+      LIMIT 40;`,
       [user_id, weightedCube]
     );
 
