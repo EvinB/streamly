@@ -297,21 +297,22 @@ app.get('/recommend-movies', async (req, res) => {
 
     // Step 4: Fetch recommended movies filtered by user's streaming services
     const recommendations = await pool.query(
-      `SELECT m.movie_id, m.title, m.type, m.imdb_rating
-       FROM streamly.media m
-       JOIN streamly.availability a 
-         ON m.movie_id = a.movie_id
-       JOIN streamly.users_streaming_services uss 
-         ON LOWER(a.streaming_service_name) = LOWER(uss.streaming_service_name)
-       WHERE uss.user_id = $1
-         AND m.genres_cube IS NOT NULL
-         AND m.movie_id NOT IN (
-           SELECT ulm.movie_id 
-           FROM streamly.users_liked_movies ulm 
-           WHERE ulm.user_id = $1
-         )
-       ORDER BY m.genres_cube <-> $2::cube
-       LIMIT 10`,
+      `SELECT DISTINCT ON (m.movie_id)
+        m.movie_id, m.title, m.type, m.imdb_rating
+      FROM streamly.media m
+      JOIN streamly.availability a 
+        ON m.movie_id = a.movie_id
+      JOIN streamly.users_streaming_services uss 
+        ON LOWER(a.streaming_service_name) = LOWER(uss.streaming_service_name)
+      WHERE uss.user_id = $1
+        AND m.genres_cube IS NOT NULL
+        AND m.movie_id NOT IN (
+          SELECT ulm.movie_id 
+          FROM streamly.users_liked_movies ulm 
+          WHERE ulm.user_id = $1
+        )
+      ORDER BY m.movie_id, m.genres_cube <-> $2::cube
+      LIMIT 10;`,
       [user_id, weightedCube]
     );
 

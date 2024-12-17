@@ -13,6 +13,7 @@ const GetRecs = ({ userId }) => {
   }, []);
 
   const fetchRecommendations = async () => {
+    console.log('Fetching recommendations...');
     setLoading(true);
     try {
       const response = await axios.get('http://localhost:3001/recommend-movies', {
@@ -29,6 +30,7 @@ const GetRecs = ({ userId }) => {
       setRecommendations([{ title: 'Failed to fetch recommendations', type: '', imdb_rating: '' }]);
     } finally {
       setLoading(false);
+      console.log('Fetching complete.');
     }
   };
 
