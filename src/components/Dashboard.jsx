@@ -2,7 +2,12 @@ import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import axios from 'axios';
 import AddLiked from './AddLiked';
+
+import SelectRegions from './SelectRegions';
+
+
 import GetRecs from './GetRecs';
+
 
 const Dashboard = () => {
   const navigate = useNavigate();
@@ -21,10 +26,17 @@ const Dashboard = () => {
   const [selectedService, setSelectedService] = useState([]);
   const [selectedType, setSelectedType] = useState([]);
   const [selectedRating, setSelectedRating] = useState([1, 10]);
-
+  const [searchSelectedServices, setSearchSelectedServices] = useState([]);
 
   //store search results 
   const [searchResults, setSearchResults] = useState([]);
+
+  //region handling 
+  const [showRegionsModal, setShowRegionsModal] = useState(false);
+
+
+  const [selectedRegions, setSelectedRegions] = useState([]); // Array of country IDs
+  const [availableCountries, setAvailableCountries] = useState([]); // List of countries from DB
 
 
 
@@ -52,6 +64,7 @@ const Dashboard = () => {
       navigate('/'); // Redirect if not logged in
     } else {
       fetchUserServices(user.user_id); // Fetch user's current streaming services
+      fetchUserRegions(user.user_id);
     }
   }, [navigate]);
 
@@ -66,6 +79,7 @@ const Dashboard = () => {
   
       setUserServices(response.data); // Directly set the array
       setSelectedServices(response.data); // Pre-check in modal
+      setSearchSelectedServices(response.data);
     } catch (error) {
       console.error('Error fetching user services:', error);
     }
@@ -130,7 +144,7 @@ const Dashboard = () => {
     const filters = {
       searchText,
       selectedGenre: selectedGenre.join(','), // Convert array to comma-separated string
-      selectedService: selectedService.join(','),
+      selectedService:  searchSelectedServices.join(','),
       selectedType: selectedType.join(','),
       selectedRating, // Send as a single value
     };
@@ -168,13 +182,41 @@ const Dashboard = () => {
         genre: movie.genre.join(', '), // Join genres into a single string
       }));
   
-      setSearchResults(formattedResults.slice(0, 20)); // Limit to 20 results
+      setSearchResults(formattedResults.slice(0, 60)); // Limit to 20 results
     } catch (error) {
       console.error('Error fetching media:', error);
       alert('Failed to fetch media.');
     }
   };
+
+  const handleSaveRegions = async () => {
+    console.log('Selected Regions (Before Save):', selectedRegions);
+
+    const user = JSON.parse(localStorage.getItem('user'));
+    try {
+      await axios.post('http://localhost:3001/update-regions', {
+        user_id: user.user_id,
+        country_ids: selectedRegions, // This now contains valid country_id integers
+      });
+      alert('Regions updated successfully!');
+      setShowRegionsModal(false);
+    } catch (error) {
+      
+      console.error('Error updating regions:', error);
+      alert('Failed to update regions.');
+    }
+  };
   
+  const fetchUserRegions = async (userId) => {
+    try {
+      const response = await axios.get('http://localhost:3001/get-user-regions', {
+        params: { user_id: userId },
+      });
+      setSelectedRegions(response.data); // Pre-select user's regions
+    } catch (error) {
+      console.error('Error fetching user regions:', error);
+    }
+  };
   
   
   // Styling
@@ -378,6 +420,12 @@ const Dashboard = () => {
         >
           Update Subscriptions
         </button>
+        <button
+          style={{ margin: '10px', padding: '10px 50px' }}
+          onClick={() => setShowRegionsModal(true)}
+        >
+          Select Regions
+        </button>
       </div>
       
 
@@ -471,11 +519,13 @@ const Dashboard = () => {
                   <input
                     type="checkbox"
                     value={service}
+                    checked={searchSelectedServices.includes(service)}
                     onChange={(e) => {
-                      setSelectedService((prev) =>
-                        prev.includes(e.target.value)
-                          ? prev.filter((s) => s !== e.target.value)
-                          : [...prev, e.target.value]
+                      const selectedService = e.target.value;
+                      setSearchSelectedServices((prev) =>
+                        prev.includes(selectedService)
+                          ? prev.filter((s) => s !== selectedService) // Deselect
+                          : [...prev, selectedService] // Select
                       );
                     }}
                     style={{ marginRight: '8px' }}
@@ -612,7 +662,6 @@ const Dashboard = () => {
         </div>
 
 
-      
 
 
        {/* Liked Movies Modal */}
@@ -707,6 +756,16 @@ const Dashboard = () => {
             Close
           </button>
         </div>
+      )}
+
+      {/* Regions popup*/}
+      {showRegionsModal && (
+        <SelectRegions
+        selectedRegions={selectedRegions}
+        setSelectedRegions={setSelectedRegions}
+        onSave={handleSaveRegions} // Save handler
+        onClose={() => setShowRegionsModal(false)}
+      />
       )}
 
 
