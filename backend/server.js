@@ -323,7 +323,7 @@ app.get('/recommend-movies', async (req, res) => {
         )
       GROUP BY m.movie_id, m.title, m.type, m.imdb_rating
       ORDER BY MIN(m.genres_cube <-> $2::cube)
-      LIMIT 10;`,
+      LIMIT 30;`,
       [user_id, weightedCube]
     );
 
@@ -402,12 +402,12 @@ app.get('/search-media', async (req, res) => {
 
     // Title search filter
     if (searchText) {
-      query += ` AND m.title ILIKE $${paramIndex}`;
-      params.push(`%${searchText}%`);
+      query += ` AND m.title_tsv @@ to_tsquery('english', $${paramIndex})`;
+      params.push(searchText.trim().replace(/\s+/g, ':* & ') + ':*'); // Format searchText for to_tsquery
       paramIndex++;
     }
 
-        // Genre filter
+    // Genre filter
     if (selectedGenre) {
       const genresArray = selectedGenre.split(',').map(g => g.trim());
       query += ` AND mg.genre = ANY($${paramIndex})`;
