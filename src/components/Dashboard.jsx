@@ -392,14 +392,17 @@ const Dashboard = () => {
             ? userServices.join(", ") // Join the services with commas
             : "No streaming services selected yet."}
         </p>
-        </div>
+      </div>
       
-        {/* Movie recommendation box */}
-        <div style={style.movieRecBox}>
-          movie rec here
-        </div>
+      {/* Movie recommendation box */}
+      <div style={{
+        ...style.movieRecBox,
+        overflow: 'visible', // Allow overflow for the carousel
+        position: 'relative', // Position the carousel
+      }}>
+        <GetRecs userId={JSON.parse(localStorage.getItem('user')).user_id} />
+      </div>
 
-      {/* Movie search filter box =====================================================*/}
       {/* Movie search filter box */}
       <div style={style.movieFilterBox}>
         <div
@@ -498,12 +501,6 @@ const Dashboard = () => {
                 <span>10</span>
               </div>
               <p>Selected Rating: {selectedRating}+</p>
-            </div>
-
-
-            {/* Movie Recommendation Box */}
-            <div style={style.movieRecBox}>
-              <GetRecs userId={JSON.parse(localStorage.getItem('user')).user_id} />
             </div>
 
 
