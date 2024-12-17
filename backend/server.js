@@ -230,6 +230,71 @@ app.get('/get-liked-movies', async (req, res) => {
   }
 });
 
+// Endpoint: Get Recommendations for a User
+app.get('/recommend-movies', async (req, res) => {
+  const { user_id } = req.query;
+
+  if (!user_id) {
+    return res.status(400).json({ message: 'User ID is required' });
+  }
+
+  try {
+    // Step 1: Set the search path to include the 'streamly' schema
+    await pool.query(`SET search_path TO streamly, public;`);
+
+    // Step 2: Sum and normalize all dimensions of genres_cube for the user's liked movies
+    const normalizedCubeResult = await pool.query(
+      `SELECT cube(array_agg(dimension_weight)) AS weighted_cube
+       FROM (
+         SELECT i AS dimension_index, 
+                SUM(COALESCE(cube_ll_coord(m.genres_cube, i), 0))::float / COUNT(*) OVER () AS dimension_weight
+         FROM streamly.media m
+         JOIN streamly.users_liked_movies ulm 
+           ON m.movie_id = ulm.movie_id,
+              generate_series(1, (SELECT cube_dim(m.genres_cube) 
+                                  FROM streamly.media m 
+                                  WHERE m.genres_cube IS NOT NULL LIMIT 1)) AS i
+         WHERE ulm.user_id = $1 
+           AND m.genres_cube IS NOT NULL
+         GROUP BY i
+       ) AS normalized_dimensions`,
+      [user_id]
+    );
+
+    const weightedCube = normalizedCubeResult.rows[0]?.weighted_cube;
+
+    // Step 3: Check if the weighted cube exists
+    if (!weightedCube) {
+      return res.status(200).json({ message: 'No liked movies to base recommendations on.', recommendations: [] });
+    }
+
+    // Step 4: Fetch recommended movies filtered by user's streaming services
+    const recommendations = await pool.query(
+      `SELECT m.movie_id, m.title, m.type, m.imdb_rating
+       FROM streamly.media m
+       JOIN streamly.availability a 
+         ON m.movie_id = a.movie_id
+       JOIN streamly.users_streaming_services uss 
+         ON LOWER(a.streaming_service_name) = LOWER(uss.streaming_service_name)
+       WHERE uss.user_id = $1
+         AND m.genres_cube IS NOT NULL
+         AND m.movie_id NOT IN (
+           SELECT ulm.movie_id 
+           FROM streamly.users_liked_movies ulm 
+           WHERE ulm.user_id = $1
+         )
+       ORDER BY m.genres_cube <-> $2::cube
+       LIMIT 10`,
+      [user_id, weightedCube]
+    );
+
+    // Step 5: Return recommendations to the client
+    res.status(200).json({ recommendations: recommendations.rows });
+  } catch (error) {
+    console.error('Error fetching recommendations:', error);
+  }
+});
+
 app.get('/search-media', async (req, res) => {
   const { searchText, selectedGenre, selectedService, selectedType, selectedRating } = req.query;
 
@@ -302,11 +367,10 @@ app.get('/search-media', async (req, res) => {
     res.status(200).json(result.rows);
   } catch (error) {
     console.error('Error fetching filtered media:', error);
+
     res.status(500).json({ message: 'Internal server error' });
   }
 });
-
-
 
 
 // Start the server
