@@ -30,7 +30,7 @@ const Dashboard = () => {
   const ratings = ['1', '2', '3', '4', '5', '6', '7', '8', '9', '10'];
   const types = ['Movie', 'Show'];
   const genres = ['Drama', 'Comedy', 'Action & Adventure', 'Thriller', 'Romance'];
-  const availableServices = ['Netflix', 'Hulu', 'Amazon Video']; // Static list of options
+  const availableServices = ['netflix', 'hulu', 'amazon video']; // Static list of options
 
   const [showAllGenres, setShowAllGenres] = useState(false);
   const allGenres = [
@@ -122,6 +122,30 @@ const Dashboard = () => {
     }
   };
 
+
+  const handleSearch = async () => {
+    const filters = {
+      searchText,
+      selectedGenre: selectedGenre.join(','), // Convert array to comma-separated string
+      selectedService: selectedService.join(','),
+      selectedType: selectedType.join(','),
+      selectedRating, // Send as a single value
+    };
+  
+    try {
+      const response = await axios.get('http://localhost:3001/search-media', {
+        params: filters,
+      });
+  
+      console.log('Filtered Media Results:', response.data);
+      alert(JSON.stringify(response.data, null, 2)); // Display results
+    } catch (error) {
+      console.error('Error fetching media:', error);
+      alert('Failed to fetch media.');
+    }
+  };
+  
+  
   // Styling
   const style = {
     container: {
@@ -370,7 +394,7 @@ const Dashboard = () => {
                 />
                 <span>10</span>
               </div>
-              <p>Selected Rating: {selectedRating-1}+</p>
+              <p>Selected Rating: {selectedRating}+</p>
             </div>
 
 
@@ -421,21 +445,7 @@ const Dashboard = () => {
           {/* Buttons */}
           <div style={{ display: 'flex', gap: '15px', marginTop: '10px' }}>
             <button
-              onClick={() => {
-                console.log('Search Filters:', {
-                  searchText,
-                  selectedGenre,
-                  selectedService,
-                  selectedType,
-                });
-                alert(
-                  `Search: ${searchText || 'None'}\nGenres: ${
-                    selectedGenre.join(', ') || 'None'
-                  }\nServices: ${
-                    selectedService.join(', ') || 'None'
-                  }\nType: ${selectedType.join(', ') || 'None'}`
-                );
-              }}
+              onClick={handleSearch}
               style={{
                 padding: '10px 20px',
                 borderRadius: '5px',
@@ -447,6 +457,7 @@ const Dashboard = () => {
             >
               Search
             </button>
+
             <button
               style={{
                 padding: '10px 20px',
