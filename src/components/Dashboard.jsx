@@ -32,7 +32,10 @@ const Dashboard = () => {
 
   //region handling 
   const [showRegionsModal, setShowRegionsModal] = useState(false);
-  const [selectedRegions, setSelectedRegions] = useState([]);
+
+
+  const [selectedRegions, setSelectedRegions] = useState([]); // Array of country IDs
+  const [availableCountries, setAvailableCountries] = useState([]); // List of countries from DB
 
 
 
@@ -60,6 +63,7 @@ const Dashboard = () => {
       navigate('/'); // Redirect if not logged in
     } else {
       fetchUserServices(user.user_id); // Fetch user's current streaming services
+      fetchUserRegions(user.user_id);
     }
   }, [navigate]);
 
@@ -182,7 +186,34 @@ const Dashboard = () => {
       alert('Failed to fetch media.');
     }
   };
+
+  const handleSaveRegions = async () => {
+    console.log('Selected Regions (Before Save):', selectedRegions);
+
+    const user = JSON.parse(localStorage.getItem('user'));
+    try {
+      await axios.post('http://localhost:3001/update-regions', {
+        user_id: user.user_id,
+        country_ids: selectedRegions, // This now contains valid country_id integers
+      });
+      alert('Regions updated successfully!');
+      setShowRegionsModal(false);
+    } catch (error) {
+      console.error('Error updating regions:', error);
+      alert('Failed to update regions.');
+    }
+  };
   
+  const fetchUserRegions = async (userId) => {
+    try {
+      const response = await axios.get('http://localhost:3001/get-user-regions', {
+        params: { user_id: userId },
+      });
+      setSelectedRegions(response.data); // Pre-select user's regions
+    } catch (error) {
+      console.error('Error fetching user regions:', error);
+    }
+  };
   
   
   // Styling
@@ -722,10 +753,11 @@ const Dashboard = () => {
       {/* Regions popup*/}
       {showRegionsModal && (
         <SelectRegions
-          selectedRegions={selectedRegions}
-          setSelectedRegions={setSelectedRegions}
-          onClose={() => setShowRegionsModal(false)}
-        />
+        selectedRegions={selectedRegions}
+        setSelectedRegions={setSelectedRegions}
+        onSave={handleSaveRegions} // Save handler
+        onClose={() => setShowRegionsModal(false)}
+      />
       )}
 
 

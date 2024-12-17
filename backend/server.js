@@ -306,6 +306,61 @@ app.get('/search-media', async (req, res) => {
   }
 });
 
+app.post('/update-regions', async (req, res) => {
+  const { user_id, country_ids } = req.body;
+
+  if (!user_id || !Array.isArray(country_ids)) {
+    return res.status(400).json({ message: 'Invalid input' });
+  }
+
+  try {
+    // Clear existing countries for the user
+    await pool.query('DELETE FROM streamly.users_countries WHERE user_id = $1', [user_id]);
+
+    // Insert new selected countries
+    const insertQueries = country_ids.map((country_id) =>
+      pool.query(
+        'INSERT INTO streamly.users_countries (user_id, country_id) VALUES ($1, $2)',
+        [user_id, country_id]
+      )
+    );
+    await Promise.all(insertQueries);
+
+    res.status(200).json({ message: 'Regions updated successfully' });
+  } catch (error) {
+    console.error('SQL Error:', error.message);
+
+    console.error('Error updating regions:', error);
+    res.status(500).json({ message: 'Internal server error' });
+  }
+});
+
+// Endpoint: Fetch user's selected regions
+app.get('/get-user-regions', async (req, res) => {
+  const { user_id } = req.query;
+
+  if (!user_id) {
+    return res.status(400).json({ message: 'User ID is required' });
+  }
+
+  try {
+    const result = await pool.query(
+      `SELECT country_id 
+       FROM streamly.users_countries 
+       WHERE user_id = $1`,
+      [user_id]
+    );
+
+    const countryIds = result.rows.map((row) => row.country_id);
+    res.json(countryIds);
+  } catch (error) {
+    console.error('Error fetching user regions:', error);
+    res.status(500).json({ message: 'Internal server error' });
+  }
+});
+
+
+
 
 
 
