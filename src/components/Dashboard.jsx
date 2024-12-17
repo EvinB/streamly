@@ -25,6 +25,11 @@ const Dashboard = () => {
   const [selectedRating, setSelectedRating] = useState([1, 10]);
 
 
+  //store search results 
+  const [searchResults, setSearchResults] = useState([]);
+
+
+
 
 
   const ratings = ['1', '2', '3', '4', '5', '6', '7', '8', '9', '10'];
@@ -139,6 +144,7 @@ const Dashboard = () => {
   
       console.log('Filtered Media Results:', response.data);
       alert(JSON.stringify(response.data, null, 2)); // Display results
+      setSearchResults(response.data.slice(0, 100)); 
     } catch (error) {
       console.error('Error fetching media:', error);
       alert('Failed to fetch media.');
@@ -153,7 +159,7 @@ const Dashboard = () => {
       flexDirection: 'column',
       justifyContent: 'center',
       alignItems: 'center',
-      height: '100vh',
+      minHeight: '100vh',
       width: '100vw',
       position: 'relative',
     },
@@ -233,7 +239,78 @@ const Dashboard = () => {
         alignItems: 'center', // Center content horizontally
         textAlign: 'center', // Ensure text is centered
       },
-      
+      resultsGrid: {
+        display: 'grid',
+        gridTemplateColumns: '1fr 1fr', // 2 columns
+        gap: '20px',
+        width: '80%',
+        marginTop: '20px',
+      },
+      tile: {
+        border: '1px solid #444',
+        borderRadius: '10px',
+        padding: '10px',
+        backgroundColor: '#222',
+        color: '#fff',
+        textAlign: 'center',
+      },
+      placeholderImage: {
+        width: '100%',
+        height: '150px',
+        backgroundColor: '#555',
+        marginBottom: '10px',
+      },
+  };
+
+  const ResultStyles = {
+    container: {
+      display: 'flex',
+      flexDirection: 'column',
+      alignItems: 'center',
+      padding: '20px',
+      color: '#fff',
+      backgroundColor: '#000',
+      minHeight: '100vh',
+    },
+    movieFilterBox: {
+      display: 'flex',
+      flexDirection: 'column',
+      width: '80%',
+      padding: '20px',
+      border: '2px solid #444',
+      borderRadius: '10px',
+      marginBottom: '20px',
+    },
+    resultsContainer: {
+      display: 'grid',
+      gridTemplateColumns: '1fr 1fr',
+      gap: '20px',
+      width: '80%',
+      marginTop: '20px',
+    },
+    tile: {
+      display: 'flex',            // Flexbox for side-by-side layout
+      alignItems: 'center',       // Center vertically
+      border: '1px solid #444',
+      borderRadius: '10px',
+      padding: '10px',
+      backgroundColor: '#222',
+      color: '#fff',
+      textAlign: 'left',
+    },
+    placeholderImage: {
+      width: '100px',             // Set image width
+      height: '150px',            // Set image height
+      backgroundColor: '#555',
+      marginRight: '15px',        // Add space between image and content
+      borderRadius: '5px',
+    },
+    tileContent: {
+      display: 'flex',
+      flexDirection: 'column',
+      justifyContent: 'space-between', // Distribute content
+      height: '100%',
+    },
   };
 
   const body = {
@@ -278,6 +355,7 @@ const Dashboard = () => {
         </button>
       </div>
       
+
 
       
 
@@ -479,10 +557,34 @@ const Dashboard = () => {
             </button>
           </div>
         </div>
+
       </div>
 
+      <div style={ResultStyles.resultsContainer}>
+          {searchResults.length > 0 ? (
+            searchResults.map((movie, index) => (
+              <div key={index} style={ResultStyles.tile}>
+                {/* Image Placeholder */}
+                <div style={ResultStyles.placeholderImage}></div>
+                
+                {/* Tile Content */}
+                <div style={ResultStyles.tileContent}>
+                  <h4 style={{ margin: '0', fontWeight: 'bold' }}>{movie.title}</h4>
+                  <p style={{ margin: '5px 0' }}>Type: {movie.type}</p>
+                  <p style={{ margin: '5px 0' }}>Genre: {movie.genre}</p>
+                  <p style={{ margin: '5px 0' }}>Rating: {movie.rating}</p>
+                  <p style={{ margin: '5px 0' }}>Availibility: {movie.services.join(', ')}
+                  </p>
+                </div>
+              </div>
+            ))
+          ) : (
+            <p>No results found.</p>
+          )}
+        </div>
 
 
+      
 
 
        {/* Liked Movies Modal */}
