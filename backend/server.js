@@ -6,9 +6,16 @@ const bodyParser = require('body-parser');
 const bcrypt = require('bcrypt');
 const cors = require('cors'); // Import CORS middleware
 const { Pool } = require('pg');
+const Redis = require('ioredis');
 
 const app = express();
 const port = 3001;
+
+// Connect to Redis
+const redis = new Redis({
+  host: process.env.REDIS_HOST,
+  port: process.env.REDIS_PORT,
+});
 
 // Database connection configuration
 const pool = new Pool({
@@ -113,6 +120,9 @@ app.post('/update-streaming-services', async (req, res) => {
     );
     await Promise.all(insertQueries);
 
+    await redis.del(`user:${user_id}:recommendations`); // Invalidate cache
+    console.log(`Cache invalidated for user ${user_id}`);
+
     res.status(200).json({ message: 'Streaming services updated successfully' });
   } catch (error) {
     console.error('Error updating streaming services:', error);
@@ -196,6 +206,10 @@ app.post('/add-liked-movie-show', async (req, res) => {
       [user_id, movie_id]
     );
 
+    // Invalidate Redis cache
+    await redis.del(`user:${user_id}:recommendations`);
+    console.log(`Cache invalidated for user ${user_id}`);
+
     res.status(200).json({ message: 'Movie or show added to liked movies/shows successfully.' });
   } catch (error) {
     console.error('Error adding liked movie or show:', error);
@@ -239,6 +253,19 @@ app.get('/recommend-movies', async (req, res) => {
   }
 
   try {
+    // Define Redis cache key
+    const cacheKey = `user:${user_id}:recommendations`;
+
+    // Check Redis for cached recommendations
+    const cachedRecommendations = await redis.get(cacheKey);
+
+    if (cachedRecommendations) {
+      console.log('Cache hit: Serving recommendations from Redis');
+      return res.status(200).json({ recommendations: JSON.parse(cachedRecommendations) });
+    }
+
+    console.log('Cache miss: Fetching recommendations from PostgreSQL');
+
     // Step 1: Set the search path to include the 'streamly' schema
     await pool.query(`SET search_path TO streamly, public;`);
 
@@ -288,7 +315,10 @@ app.get('/recommend-movies', async (req, res) => {
       [user_id, weightedCube]
     );
 
-    // Step 5: Return recommendations to the client
+    // Step 5: Cache the recommendations in Redis
+    await redis.set(cacheKey, JSON.stringify(recommendations.rows), 'EX', 3600); // Cache for 1 hour
+
+    // Step 6: Return recommendations to the client
     res.status(200).json({ recommendations: recommendations.rows });
   } catch (error) {
     console.error('Error fetching recommendations:', error);
