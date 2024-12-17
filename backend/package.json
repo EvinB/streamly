@@ -15,9 +15,10 @@
   "dependencies": {
     "bcrypt": "^5.1.1",
     "body-parser": "^1.20.3",
+    "dotenv": "^16.x.x",
     "express": "^4.21.2",
+    "ioredis": "^5.4.1",
     "pg": "^8.13.1",
-    "react-router-dom": "^6.28.0",
-    "dotenv": "^16.x.x"
+    "react-router-dom": "^6.28.0"
   }
 }
