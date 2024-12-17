@@ -230,6 +230,83 @@ app.get('/get-liked-movies', async (req, res) => {
   }
 });
 
+app.get('/search-media', async (req, res) => {
+  const { searchText, selectedGenre, selectedService, selectedType, selectedRating } = req.query;
+
+  try {
+    let query = `
+      SELECT 
+        m.title, 
+        m.type, 
+        m.imdb_rating AS rating, 
+        mg.genre, 
+        array_agg(DISTINCT a.streaming_service_name) AS services
+      FROM streamly.media m
+      LEFT JOIN streamly.media_genres mg ON m.movie_id = mg.movie_id
+      LEFT JOIN streamly.availability a ON m.movie_id = a.movie_id
+      WHERE 1=1
+    `;
+    const params = [];
+    let paramIndex = 1;
+
+    // Title search filter
+    if (searchText) {
+      query += ` AND m.title ILIKE $${paramIndex}`;
+      params.push(`%${searchText}%`);
+      paramIndex++;
+    }
+
+        // Genre filter
+    if (selectedGenre) {
+      const genresArray = selectedGenre.split(',').map(g => g.trim());
+      query += ` AND mg.genre = ANY($${paramIndex})`;
+      params.push(genresArray); // Ensure it's an array
+      paramIndex++;
+    }
+
+    // Streaming service filter
+    if (selectedService) {
+      const servicesArray = selectedService.split(',').map(s => s.trim());
+      query += ` AND a.streaming_service_name = ANY($${paramIndex})`;
+      params.push(servicesArray); // Ensure it's an array
+      paramIndex++;
+    }
+
+    // Rating filter (min and max rating)
+    if (selectedRating) {
+      const minRating = parseFloat(selectedRating);
+      const maxRating = 10; // Default max value
+      query += ` AND m.imdb_rating >= $${paramIndex} AND m.imdb_rating <= $${paramIndex + 1}`;
+      params.push(minRating, maxRating);
+      paramIndex += 2;
+    }
+
+    // Type filter (Movie or Show)
+    if (selectedType) {
+      query += ` AND m.type = ANY($${paramIndex})`;
+      params.push(selectedType.split(','));
+      paramIndex++;
+    }
+
+    query += `
+      GROUP BY m.movie_id, m.title, m.type, m.imdb_rating, mg.genre
+      ORDER BY m.title;
+    `;
+
+    // Execute the query
+    console.log('Query Params:', { searchText, selectedGenre, selectedService, selectedRating });
+    console.log('Executing Query:', query);
+
+    const result = await pool.query(query, params);
+    console.log('Filtered Media Results:', result.rows); // Log the rows correctly
+    res.status(200).json(result.rows);
+  } catch (error) {
+    console.error('Error fetching filtered media:', error);
+    res.status(500).json({ message: 'Internal server error' });
+  }
+});
+
+
 
 
 // Start the server
