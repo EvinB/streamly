@@ -1,35 +1,38 @@
-Setup
-1) Run the following command to install dependencies:
-    npm install
-2) start redis server
-    redis-server
-3) cd backend
-    node server.js
-4) open new terminal 
-    npm run dev 
+## Overview
+Streamly is a full-stack web application built in 48 hours during a hackathon to solve the frustrating problem of content discovery across multiple streaming services. Users can search for movies and shows across Netflix, Hulu, and Amazon from one place, filter by genre, rating, and service, and get personalized recommendations based on their liked content.
 
-How to Use the Application
-Login/Register:
+## Key Features
+- Cross Platfrom search: Search and filter content across Netflix, Hulu, and Amazon
+- User Accounts: Register/login system secured using Bcrypt
+- Like Content: Like movies/shows to build your watch history and preferences 
+- Personalized Recommendations: Recommendations generated using PostgreSQL cube extension 
+- Redis Caching: Fask lookups for recommendations 
+- TMDB Integration: Movie/show images fetched using TMDB Api
 
-New users should click Register to create an account.
-After registering, they will be redirected to the Sign In page to log in.
-Add Liked Movies:
+## Architecture 
+Frontend:
 
-Click Add Liked Movies and search for content you enjoy.
-Update Subscriptions:
+- React with Vite for fast dev/build.
+- React Router for navigation (register, login, dashboard).
+- Axios for API calls.
+- Component-based structure
 
-Click Update Subscriptions and select the streaming services you are subscribed to.
-Select Regions:
+Backend: 
 
-Click Select Region and check the boxes for the countries relevant to you.
-Refresh Recommendations:
+- Express Server
+- PostgreSQL for persistent data (users, liked content, ratingsm, availability, countries)
+- Redis for caching recommendations, subscriptions, and liked movies
+- Full-text search using PostgreSQL tsvector queries
+- Genre similarity via vector math using the cube extension
 
-Press the Refresh button above the recommendations box or refresh the page.
-Explore Content:
-
-Use the Filter Box to search for movies and shows based on your criteria
+APIs:
+- TMDB (poster fetches using IMDb IDs)
 
 
+
+
+
+## Data Sets
 https://www.kaggle.com/datasets/octopusteam/full-hulu-dataset
 
 https://www.kaggle.com/datasets/octopusteam/full-netflix-dataset
