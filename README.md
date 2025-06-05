@@ -29,6 +29,8 @@ APIs:
 - TMDB (poster fetches using IMDb IDs)
 
 
+![Screenshot](https://github.com/EvinB/streamly/blob/main/streamlyRecs.png)
+![Screenshot](https://github.com/EvinB/streamly/blob/main/streamlySearch.png)
 
 
 
